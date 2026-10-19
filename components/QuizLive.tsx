@@ -272,7 +272,7 @@ export default function QuizLive() {
       <a href="https://raquyetdinh-sooty.vercel.app/" target="_blank" rel="noopener noreferrer">Ra Quyết Định Online</a>
       <a href="https://quayso-three.vercel.app/" target="_blank" rel="noopener noreferrer">Quay Số May Mắn</a>
     </nav>
-    <span>Made for live moments · Next.js + Supabase</span>
+    <span>TrungDzung 2026</span>
   </footer>
  </main>
 }

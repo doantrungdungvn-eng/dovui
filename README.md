@@ -53,3 +53,10 @@ Bản khởi tạo này là MVP mẫu để dễ cài đặt và thử nghiệm.
 Trong Vercel, mở **Project → Settings → Environment Variables** và thêm biến server-only `ADMIN_PASSWORD` với mật khẩu dài, khó đoán. Không đặt tên biến này có tiền tố `NEXT_PUBLIC_`. Sau khi lưu, redeploy project. Khi mở tab **Quản trị**, nhập mật khẩu này để mở khóa giao diện; nút **Khóa trang** sẽ khóa lại.
 
 Lưu ý bảo mật: đây là lớp khóa giao diện quản trị, còn quyền ghi dữ liệu phải được bảo vệ riêng bằng Supabase Row Level Security (RLS) và xác thực phía máy chủ. Không dùng giao diện khóa mật khẩu thay cho chính sách RLS khi triển khai công khai.
+
+## Nhóm câu hỏi theo chủ đề
+- Trong **Quản trị**, tạo nhóm như Đố vui tổng hợp, Khoa học, Lịch sử, Tiếng Anh, Âm nhạc hoặc chủ đề sự kiện.
+- Nhập/tạo câu hỏi rồi lưu nhóm; các nhóm được lưu trong bảng `quiz_topics` của Supabase và có thể dùng lại.
+- Mỗi nhóm có mã tiền tố 2–5 ký tự do quản trị thiết lập. Khi tạo phòng, hệ thống dùng tiền tố đó cộng thêm 3 ký tự ngẫu nhiên để tạo mã phòng duy nhất (ví dụ `KHOA7F2`), tránh trùng với phòng cũ.
+- Ở màn hình **MC / TV**, chọn chủ đề trước khi tạo phòng. Mã phòng và QR được tạo theo chủ đề đã chọn.
+- Nếu đã cài bản cũ, chạy lại toàn bộ `supabase/schema.sql` trong Supabase SQL Editor để tạo bảng `quiz_topics` và các policy liên quan trước khi dùng tính năng này.

@@ -144,3 +144,23 @@ exception when duplicate_object then null; when undefined_object then null; end 
 do $$ begin
   alter publication supabase_realtime add table public.quiz_answers;
 exception when duplicate_object then null; when undefined_object then null; end $$;
+
+-- Reusable topic/question groups managed from the admin page.
+create table if not exists public.quiz_topics (
+  id uuid primary key default gen_random_uuid(),
+  name text not null check (char_length(name) between 2 and 100),
+  code_prefix text not null check (code_prefix ~ '^[A-Z0-9]{2,5}$'),
+  questions jsonb not null default '[]'::jsonb check (jsonb_typeof(questions)='array'),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+create unique index if not exists quiz_topics_code_prefix_idx on public.quiz_topics(code_prefix);
+alter table public.quiz_topics enable row level security;
+drop policy if exists "topics readable" on public.quiz_topics;
+create policy "topics readable" on public.quiz_topics for select to anon, authenticated using (true);
+drop policy if exists "topics create" on public.quiz_topics;
+create policy "topics create" on public.quiz_topics for insert to anon, authenticated with check (true);
+drop policy if exists "topics update" on public.quiz_topics;
+create policy "topics update" on public.quiz_topics for update to anon, authenticated using (true) with check (true);
+drop policy if exists "topics delete" on public.quiz_topics;
+create policy "topics delete" on public.quiz_topics for delete to anon, authenticated using (true);

@@ -60,3 +60,9 @@ Lưu ý bảo mật: đây là lớp khóa giao diện quản trị, còn quyề
 - Mỗi nhóm có mã tiền tố 2–5 ký tự do quản trị thiết lập. Khi tạo phòng, hệ thống dùng tiền tố đó cộng thêm 3 ký tự ngẫu nhiên để tạo mã phòng duy nhất (ví dụ `KHOA7F2`), tránh trùng với phòng cũ.
 - Ở màn hình **MC / TV**, chọn chủ đề trước khi tạo phòng. Mã phòng và QR được tạo theo chủ đề đã chọn.
 - Nếu đã cài bản cũ, chạy lại toàn bộ `supabase/schema.sql` trong Supabase SQL Editor để tạo bảng `quiz_topics` và các policy liên quan trước khi dùng tính năng này.
+
+
+## Chủ đề Prudential
+1. Trong Supabase SQL Editor, chạy `supabase/setup_prudential_topics.sql` để tạo bảng `quiz_topics` (nếu thiếu), bật RLS policies và thêm/cập nhật 20 câu hỏi Prudential.
+2. Deploy phiên bản source mới lên Vercel.
+3. Mở lại tab MC / TV; danh sách chủ đề sẽ tải từ `quiz_topics`.

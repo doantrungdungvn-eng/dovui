@@ -113,7 +113,7 @@ export default function QuizLive() {
    }catch{setAdminLoginError("Không kết nối được máy chủ. Vui lòng thử lại.");setBusy(false);}
  }
  function logoutAdmin(){setAdminUnlocked(false);setAdminPassword("");setAdminLoginError("");setTab("home");notify("Đã khóa trang quản trị.");}
- useEffect(()=>{ if(!adminUnlocked || !configured) return; void loadTopics(); },[adminUnlocked]);
+ useEffect(()=>{ if((tab==="host" || (tab==="admin" && adminUnlocked)) && configured) void loadTopics(); },[tab,adminUnlocked,configured]);
  async function loadTopics(){
    const {data,error}=await supabase.from("quiz_topics").select("id,name,code_prefix,questions").order("created_at",{ascending:false});
    if(error){notify("Không tải được nhóm câu hỏi. Hãy chạy SQL cập nhật schema: "+error.message);return;}

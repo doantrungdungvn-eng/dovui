@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 export const metadata: Metadata = {
   title: "Quiz Live — Live Quiz Arena",
-  description: "Quiz trực tiếp phong cách Kahoot, dùng điện thoại để trả lời và bảng xếp hạng realtime."
+  description: "Đố Vui Online - TrungDzung: chơi quiz trực tiếp, trả lời bằng điện thoại và xem bảng xếp hạng."
 };
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return <html lang="vi"><body>{children}</body></html>;

@@ -17,3 +17,19 @@
 .lobby-qr p{font-size:12px;line-height:1.5;color:#51476b}
 .lobby-qr b{font-size:19px;letter-spacing:2px;color:#171329}
 @media(max-width:760px){.room-qr{width:100%;margin:12px 0 0}.room-qr img{width:190px;height:190px}.lobby-qr{flex-direction:column;text-align:center;gap:10px}.lobby-qr img{width:210px;height:210px}.lobby-screen h2{margin-bottom:16px}}
+
+/* Admin password gate */
+.admin-login-card{width:min(100%,440px);margin:50px auto 70px;padding:34px;border:1px solid #ffffff18;border-radius:20px;background:linear-gradient(145deg,#191a2a,#12131d);box-shadow:0 28px 80px #0005;text-align:center}
+.admin-login-card .setup-icon{margin:0 auto 18px}
+.admin-login-card h1{font:700 30px 'Space Grotesk';letter-spacing:-1px;margin:12px 0 9px}
+.admin-login-card>p{font-size:12px;line-height:1.7;color:#9ca3b8}
+.admin-login-card form{margin-top:25px;text-align:left}
+.admin-login-card form>label{display:block;font-size:12px;font-weight:600;color:#c6cada}
+.password-field{position:relative;margin-top:8px}
+.password-field input{display:block;width:100%;padding:14px 46px 14px 14px;border:1px solid #303348;border-radius:10px;background:#0f1019;color:#fff;outline:none;font:inherit;font-size:13px}
+.password-field input:focus{border-color:#8b5cf6;box-shadow:0 0 0 3px #8b5cf620}
+.password-toggle{position:absolute;right:7px;top:50%;transform:translateY(-50%);display:grid;place-items:center;width:34px;height:34px;border:0;border-radius:8px;background:transparent;color:#a7aec1}
+.admin-login-error{margin:12px 0 0!important;color:#fda4af!important;font-size:12px!important}
+.admin-login-hint{margin-top:18px!important;font-size:10px!important;color:#727a91!important}
+.admin-heading-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+@media(max-width:600px){.admin-login-card{margin:24px auto 45px;padding:25px 20px}.admin-heading-actions{align-items:flex-start}.admin-heading-actions .status-badge{display:none}.admin-heading-actions .btn-secondary{padding:10px 12px}}

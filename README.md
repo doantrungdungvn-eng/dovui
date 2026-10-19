@@ -46,3 +46,10 @@ Bản khởi tạo này là MVP mẫu để dễ cài đặt và thử nghiệm.
 - Không cho client tự quyết định `p_score`; tính điểm hoàn toàn trong RPC dựa trên `question_started_at`, `question_ends_at`, đáp án và `clock_timestamp()`.
 - Cần xác thực quyền sở hữu `player_id` với phiên người chơi, giới hạn rate và chống giả mạo ID.
 - Không bao giờ đưa `service_role` key vào biến `NEXT_PUBLIC_*` hay frontend.
+
+
+## Mật khẩu trang quản trị
+
+Trong Vercel, mở **Project → Settings → Environment Variables** và thêm biến server-only `ADMIN_PASSWORD` với mật khẩu dài, khó đoán. Không đặt tên biến này có tiền tố `NEXT_PUBLIC_`. Sau khi lưu, redeploy project. Khi mở tab **Quản trị**, nhập mật khẩu này để mở khóa giao diện; nút **Khóa trang** sẽ khóa lại.
+
+Lưu ý bảo mật: đây là lớp khóa giao diện quản trị, còn quyền ghi dữ liệu phải được bảo vệ riêng bằng Supabase Row Level Security (RLS) và xác thực phía máy chủ. Không dùng giao diện khóa mật khẩu thay cho chính sách RLS khi triển khai công khai.

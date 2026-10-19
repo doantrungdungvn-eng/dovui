@@ -1,4 +1,4 @@
--- Quiz Live: tạo bảng lưu các bộ chủ đề nếu chưa tồn tại.
+-- Đố Vui Online Miễn Phí: tạo bảng lưu các bộ chủ đề nếu chưa tồn tại.
 -- Chạy đoạn này một lần trong Supabase SQL Editor trước khi mở chủ đề trên website.
 create extension if not exists pgcrypto;
 
@@ -35,7 +35,7 @@ create policy "topics delete" on public.quiz_topics
 
 -- Thêm/cập nhật bộ câu hỏi Prudential (20 câu).
 -- UPDATE TOPIC: PRUDENTIAL
--- Quiz Live schema: public.quiz_topics(name, code_prefix, questions)
+-- Đố Vui Online Miễn Phí schema: public.quiz_topics(name, code_prefix, questions)
 -- Chạy trong Supabase Dashboard > SQL Editor.
 -- Script chỉ thêm/cập nhật chủ đề Prudential; không xóa phòng chơi hay kết quả hiện có.
 -- Nếu đã có chủ đề code_prefix = 'PRU', questions sẽ được thay bằng bộ 20 câu bên dưới.

@@ -1,10 +1,10 @@
--- Quiz Live schema. Run the whole script in Supabase SQL Editor.
+-- Đố Vui Online Miễn Phí schema. Run the whole script in Supabase SQL Editor.
 create extension if not exists pgcrypto;
 
 create table if not exists public.quiz_rooms (
   id uuid primary key default gen_random_uuid(),
   code text not null unique,
-  title text not null default 'Quiz Live',
+  title text not null default 'Đố Vui Online Miễn Phí',
   status text not null default 'lobby' check (status in ('lobby','question','reveal','finished')),
   current_question integer not null default 0,
   question_started_at timestamptz,

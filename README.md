@@ -1,4 +1,4 @@
-# Quiz Live
+# Đố Vui Online Free
 
 Ứng dụng quiz trực tiếp phong cách Kahoot: MC/TV, người chơi trên điện thoại, bảng xếp hạng TOP 10, quản lý câu hỏi và nhập Excel/CSV.
 

@@ -118,13 +118,21 @@ export default function QuizLive() {
    if(!room)return;
    const next=questionIndex+1;
    if(next>=questions.length){
-     await supabase.from("quiz_rooms").update({status:"finished",question_ends_at:null}).eq("id",room.id);
-     setRoom({...room,status:"finished"});setTab("board");await refreshPlayers(room.id);return;
+     const {error}=await supabase.from("quiz_rooms").update({status:"finished",question_ends_at:null,question_started_at:null}).eq("id",room.id);
+     if(error){notify("Không thể kết thúc phòng: "+error.message);return;}
+     setRoom({...room,status:"finished",question_started_at:null,question_ends_at:null});setTab("board");await refreshPlayers(room.id);return;
    }
+   // Advance directly into the next live question so players do not get stuck
+   // on the waiting screen or require a second click from the host.
+   const q=questions[next];
+   const start=new Date();
+   const end=new Date(start.getTime()+q.seconds*1000);
+   const patch={status:"question",current_question:next,question_started_at:start.toISOString(),question_ends_at:end.toISOString()};
+   const {error}=await supabase.from("quiz_rooms").update(patch).eq("id",room.id);
+   if(error){notify("Không thể mở câu tiếp theo: "+error.message);return;}
    setQuestionIndex(next);
-   await supabase.from("quiz_rooms").update({status:"lobby",current_question:next,question_started_at:null,question_ends_at:null}).eq("id",room.id);
-   setRoom({...room,status:"lobby",current_question:next,question_started_at:null,question_ends_at:null});
-   setSelected(null);setHasAnswered(false);setShowCorrect(false);
+   setRoom({...room,...patch});
+   setSelected(null);setHasAnswered(false);setShowCorrect(false);setAnswerCount(0);
  }
  async function submitAnswer(index:number){
    if(!room||!player||hasAnswered||selected!==null||room.status!=="question"||timer<=0)return;

@@ -70,3 +70,11 @@
 .volume-control input{width:100%;accent-color:#a78bfa;cursor:pointer}
 @media(max-width:900px){.audio-controls{margin-left:0}.audio-toggle{padding:8px 10px}}
 @media(max-width:600px){.audio-controls{gap:4px}.audio-toggle{font-size:11px;padding:7px 8px}.volume-control{width:55px}}
+
+/* Always-visible floating music control */
+.music-float{position:fixed;right:20px;bottom:20px;z-index:10000;display:flex;align-items:center;gap:12px;flex-wrap:wrap;max-width:calc(100vw - 30px);padding:10px 13px;background:#171329;border:1px solid #8b5cf6;border-radius:16px;box-shadow:0 12px 40px #0008;color:#fff}
+.music-float-toggle{display:flex;align-items:center;gap:8px;background:#7c3aed;color:#fff;border:0;border-radius:10px;padding:10px 13px;font-weight:700;cursor:pointer;white-space:nowrap}
+.music-float-toggle:hover{background:#6d28d9}
+.music-float input[type=range]{width:95px;accent-color:#c4b5fd;cursor:pointer}
+.music-float small{width:100%;font-size:11px;color:#c4b5fd;padding-left:3px}
+@media(max-width:600px){.music-float{right:10px;bottom:10px;gap:8px;padding:8px 10px}.music-float-toggle{padding:9px 11px;font-size:12px}.music-float input[type=range]{width:72px}}

@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase, configured } from "@/lib/supabase";
-import { Radio, Trophy, Users, Smartphone, MonitorPlay, Settings, Plus, Upload, Play, ChevronRight, Clock3, CheckCircle2, XCircle, Copy, RefreshCw, LogIn, Crown, Zap, BookOpen, QrCode, Eye, EyeOff, Maximize2, Minimize2, X } from "lucide-react";
+import { Radio, Trophy, Users, Smartphone, MonitorPlay, Settings, Plus, Upload, Play, ChevronRight, Clock3, CheckCircle2, XCircle, Copy, RefreshCw, LogIn, Crown, Zap, BookOpen, QrCode, Eye, EyeOff, Maximize2, Minimize2, X, Volume2, VolumeX } from "lucide-react";
 import * as XLSX from "xlsx";
 
 type Question = { id?: string; prompt: string; options: string[]; correct_index: number; seconds: number; points: number };
@@ -55,8 +55,56 @@ export default function QuizLive() {
  const [topicName,setTopicName] = useState("");
  const [topicCodePrefix,setTopicCodePrefix] = useState("");
  const [editingTopicId,setEditingTopicId] = useState("");
+ const [musicEnabled,setMusicEnabled] = useState(false);
+ const [musicVolume,setMusicVolume] = useState(0.22);
+ const audioContextRef = useRef<AudioContext|null>(null);
+ const musicTimerRef = useRef<number|null>(null);
+ const musicStepRef = useRef(0);
 
  const activeQuestion = useMemo(()=>questions[questionIndex] || null,[questions,questionIndex]);
+
+ function toggleMusic(){
+   const next = !musicEnabled;
+   if(next){
+     try{
+       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+       if(!AudioCtx){notify("Trình duyệt chưa hỗ trợ phát nhạc.");return;}
+       if(!audioContextRef.current) audioContextRef.current = new AudioCtx();
+       if(audioContextRef.current.state === "suspended") void audioContextRef.current.resume();
+       setMusicEnabled(true);
+     }catch{notify("Không thể bật nhạc trên trình duyệt này.");}
+   }else{
+     setMusicEnabled(false);
+   }
+ }
+
+ useEffect(()=>{
+   const ctx = audioContextRef.current;
+   if(!musicEnabled || !ctx || !room || room.status!=="question"){
+     if(musicTimerRef.current!==null){window.clearInterval(musicTimerRef.current);musicTimerRef.current=null;}
+     return;
+   }
+   // A lightweight, original synthesized game-show loop; no external audio files required.
+   const notes = [523.25,659.25,783.99,659.25,587.33,698.46,880,698.46];
+   const playNote = () => {
+     if(!audioContextRef.current || audioContextRef.current.state!=="running") return;
+     const ac = audioContextRef.current;
+     const now = ac.currentTime;
+     const osc = ac.createOscillator();
+     const gain = ac.createGain();
+     osc.type = "triangle";
+     osc.frequency.setValueAtTime(notes[musicStepRef.current % notes.length], now);
+     gain.gain.setValueAtTime(0.0001, now);
+     gain.gain.exponentialRampToValueAtTime(Math.max(0.0002,musicVolume*0.055), now+0.025);
+     gain.gain.exponentialRampToValueAtTime(0.0001, now+0.19);
+     osc.connect(gain); gain.connect(ac.destination);
+     osc.start(now); osc.stop(now+0.2);
+     musicStepRef.current += 1;
+   };
+   playNote();
+   musicTimerRef.current = window.setInterval(playNote, 230);
+   return ()=>{if(musicTimerRef.current!==null){window.clearInterval(musicTimerRef.current);musicTimerRef.current=null;}};
+ },[musicEnabled,musicVolume,room?.id,room?.status,room?.current_question]);
 
  useEffect(()=>{
    if (!room?.id) return;
@@ -251,7 +299,7 @@ export default function QuizLive() {
  useEffect(()=>{if(typeof window!=="undefined"){const c=new URLSearchParams(window.location.search).get("join");if(c){setRoomCode(c);setTab("play");}}},[]);
 
  return <main className="app-shell">
-  <header className="topbar"><a className="brand" href="#" onClick={e=>{e.preventDefault();setTab("home")}}><span className="brand-mark"><Radio size={23}/></span><span>ĐỐ VUI ONLINE<small>MIỄN PHÍ · PLAY · LEARN · WIN</small></span></a><nav><button className={tab==="host"?"nav-active":""} onClick={()=>setTab("host")}><MonitorPlay size={17}/> MC / TV</button><button className={tab==="play"?"nav-active":""} onClick={()=>setTab("play")}><Smartphone size={17}/> Người chơi</button><button className={tab==="admin"?"nav-active":""} onClick={()=>setTab("admin")}><Settings size={17}/> Quản trị</button></nav><div className="online-pill"><span/> ĐỐ VUI ONLINE</div></header>
+  <header className="topbar"><a className="brand" href="#" onClick={e=>{e.preventDefault();setTab("home")}}><span className="brand-mark"><Radio size={23}/></span><span>ĐỐ VUI ONLINE<small>MIỄN PHÍ · PLAY · LEARN · WIN</small></span></a><nav><button className={tab==="host"?"nav-active":""} onClick={()=>setTab("host")}><MonitorPlay size={17}/> MC / TV</button><button className={tab==="play"?"nav-active":""} onClick={()=>setTab("play")}><Smartphone size={17}/> Người chơi</button><button className={tab==="admin"?"nav-active":""} onClick={()=>setTab("admin")}><Settings size={17}/> Quản trị</button></nav><div className="online-pill"><span/> ĐỐ VUI ONLINE</div><div className="audio-controls"><button type="button" className="audio-toggle" onClick={toggleMusic} aria-pressed={musicEnabled} title={musicEnabled?"Tắt nhạc nền":"Bật nhạc nền"}>{musicEnabled?<Volume2 size={17}/>:<VolumeX size={17}/>} {musicEnabled?"Tắt nhạc":"Bật nhạc"}</button>{musicEnabled&&<label className="volume-control" title="Âm lượng nhạc"><input aria-label="Âm lượng nhạc nền" type="range" min="0" max="0.6" step="0.05" value={musicVolume} onChange={e=>setMusicVolume(Number(e.target.value))}/></label>}</div></header>
   {!configured&&<div className="config-warning"><strong>Chưa kết nối Supabase.</strong> Hãy tạo project Supabase, chạy file <code>supabase/schema.sql</code> và thêm biến môi trường vào Vercel. Bạn vẫn có thể xem giao diện demo.</div>}
   {message&&<div className="toast">{message}</div>}
   {tab==="home"&&<section className="hero-wrap"><div className="hero-copy"><div className="eyebrow"><Zap size={15}/> NỀN TẢNG ĐỐ VUI TRỰC TIẾP</div><h1>Biến mỗi câu hỏi<br/>thành <span>một cuộc chơi.</span></h1><p>Nền tảng đố vui trực tiếp cho sự kiện, lớp học và đội nhóm. Chiếu câu hỏi trên màn hình lớn, mọi người trả lời bằng điện thoại.</p><div className="hero-actions"><button className="btn-primary" onClick={()=>setTab("host")}><MonitorPlay size={18}/> Bắt đầu làm MC</button><button className="btn-secondary" onClick={()=>setTab("play")}><Smartphone size={18}/> Tham gia chơi <ChevronRight size={17}/></button></div><div className="hero-stats"><div><strong>4 lựa chọn</strong><span>A · B · C · D</span></div><div><strong>Realtime</strong><span>Cập nhật tức thì</span></div><div><strong>TOP 10</strong><span>Vinh danh người chơi</span></div></div></div><div className="hero-art"><div className="orbit orbit-one"/><div className="orbit orbit-two"/><div className="floating-chip chip-one"><Trophy size={17}/> TOP 10</div><div className="floating-chip chip-two"><Users size={17}/> Cùng chơi</div><div className="quiz-card"><div className="quiz-card-head"><span>ROUND 01 / 03</span><span className="live-dot">● LIVE</span></div><div className="mini-progress"><i/></div><div className="mini-q">Thủ đô của Việt Nam là thành phố nào?</div><div className="mini-answers"><div style={{background:colors[0]}}>▲ Hà Nội?</div><div style={{background:colors[1]}}>◆ Đà Nẵng</div><div style={{background:colors[2]}}>● Huế</div><div style={{background:colors[3]}}>■ Cần Thơ</div></div><div className="card-footer"><span><Clock3 size={14}/> 00:12</span><span>128 người đang chơi</span></div></div></div><div className="feature-grid"><article><span className="feature-icon purple"><MonitorPlay/></span><h3>Màn hình MC</h3><p>Điều khiển câu hỏi, đếm ngược và công bố đáp án trên TV.</p></article><article><span className="feature-icon blue"><Smartphone/></span><h3>Trả lời trên mobile</h3><p>Giao diện nút lớn, dễ chọn, không cần cài ứng dụng.</p></article><article><span className="feature-icon gold"><Trophy/></span><h3>Bảng xếp hạng</h3><p>Chấm điểm theo độ chính xác và tốc độ trả lời.</p></article><article><span className="feature-icon green"><BookOpen/></span><h3>Quản lý câu hỏi</h3><p>Tạo câu hỏi trực tiếp hoặc nhập danh sách từ Excel.</p></article></div></section>}

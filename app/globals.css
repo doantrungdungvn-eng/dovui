@@ -60,3 +60,13 @@
 .footer-links a{color:var(--muted);text-decoration:none;transition:color .2s ease}
 .footer-links a:hover{color:var(--text);text-decoration:underline}
 @media(max-width:760px){.footer-links{gap:10px 14px}}
+
+
+/* Quiz Live background music controls */
+.audio-controls{display:flex;align-items:center;gap:9px;margin-left:10px}
+.audio-toggle{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:9px 12px;border:1px solid var(--border,rgba(255,255,255,.16));border-radius:12px;background:rgba(255,255,255,.05);color:var(--text,#f8fafc);font:600 12px inherit;cursor:pointer;white-space:nowrap}
+.audio-toggle:hover{background:rgba(139,92,246,.18);border-color:rgba(167,139,250,.55)}
+.volume-control{display:flex;align-items:center;width:76px}
+.volume-control input{width:100%;accent-color:#a78bfa;cursor:pointer}
+@media(max-width:900px){.audio-controls{margin-left:0}.audio-toggle{padding:8px 10px}}
+@media(max-width:600px){.audio-controls{gap:4px}.audio-toggle{font-size:11px;padding:7px 8px}.volume-control{width:55px}}

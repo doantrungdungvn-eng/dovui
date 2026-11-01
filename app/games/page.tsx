@@ -232,7 +232,7 @@ export default function Home() {
             <div className="game-actions"><button onClick={()=>setRunning(v=>!v)} disabled={gameOver}><Pause size={15}/>{running?"TẠM DỪNG":"TIẾP TỤC"}</button><button onClick={startGame}><RotateCcw size={15}/> CHƠI LẠI</button></div>
           </aside>
         </div>
-        <div className="mobile-controls"><button onClick={()=>move(-1,0)}>←</button><button onClick={rotatePiece}>↻</button><button onClick={hardDrop} aria-label="Thả khối xuống ngay">↓</button><button onClick={()=>move(1,0)}>→</button></div>
+        <div className="mobile-controls"><button onClick={()=>move(-1,0)}>←</button><button onClick={rotatePiece}>↻</button><button onPointerDown={(e)=>{e.preventDefault();hardDrop();}} onClick={(e)=>e.preventDefault()} aria-label="Thả khối xuống ngay" style={{touchAction:"none"}}>↓</button><button onClick={()=>move(1,0)}>→</button></div>
       </div>
       <aside className="right-column">
         <div className="panel player-panel"><div className="card-heading"><div><span className="section-kicker">PLAYER PROFILE</span><h2>Người chơi</h2></div><div className="avatar">{(player||"?").slice(0,1).toUpperCase()}</div></div><label htmlFor="player-name">Tên hiển thị</label><div className="input-row"><input id="player-name" value={nameInput} maxLength={24} onChange={e=>setNameInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&saveName()} placeholder="Nhập tên của bạn"/><button onClick={saveName}>Lưu</button></div><div className="profile-foot"><span>Hồ sơ hiện tại</span><b>{player||"Khách"}</b></div></div>

@@ -1,6 +1,6 @@
-import "./games.css";
+"use client";
 
- "use client";
+import "./games.css";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";

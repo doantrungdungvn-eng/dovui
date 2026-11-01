@@ -11,12 +11,3 @@ Mở `index.html` bằng trình duyệt hiện đại hoặc deploy toàn bộ t
 
 ## Lưu ý
 Chat vẫn là mô phỏng cục bộ; để nhiều thiết bị nhìn thấy nhau theo thời gian thực cần kết nối backend/Realtime.
-
-
-## Cafe Đầu Hẻm — giao diện sân vườn
-
-- `index.html` là màn hình quán cà phê tương tác.
-- `assets/hall.svg` là phông nền sân vườn sạch, không có người hoặc bàn ghế được vẽ sẵn.
-- Bàn tròn và bốn ghế mỗi bàn được vẽ bằng canvas để nhân vật có thể ngồi đúng vị trí.
-- Khung hiển thị 9:16 được thu nhỏ nhẹ trên màn hình desktop để không chiếm hết chiều cao.
-- Trò chuyện trong phiên bản hiện tại là demo phía trình duyệt; chưa phải chat realtime giữa nhiều người dùng.

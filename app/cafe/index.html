@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Cafe 247: bước vào quán, chọn chỗ ngồi, gọi cà phê và trò chuyện cùng mọi người.">
+<meta name="description" content="Café 247 Online: chọn chỗ ngồi, gọi cà phê và trò chuyện cùng mọi người.">
 <meta name="theme-color" content="#0c0705">
-<meta property="og:title" content="Cafe 247 · Quán cà phê ảo">
+<meta property="og:title" content="Café 247 Online · Quán cà phê ảo">
 <meta property="og:image" content="/cafe/assets/hall-cafe247.png">
-<title>Cafe 247 · Quán cà phê ảo</title>
+<title>Café 247 Online · Quán cà phê ảo</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,600;1,400&family=Be+Vietnam+Pro:wght@400;500;600&display=swap">
 <style>
 /* Responsive 9:16 café stage; clean garden background with no baked-in people or interface. */
@@ -90,6 +90,7 @@ input::placeholder{color:#7d6a52}
 
 <div id="wrap"><div id="stage">
   <canvas id="c"></canvas>
+  <div id="brandSign" aria-label="Café 247 Online">Café <span>247</span> Online</div>
   <div id="top" class="hud">
     <span class="chip" id="me" hidden><b id="meName"></b><span class="hint">đang uống cà phê</span></span>
     <span class="chip"><span class="n" id="count">0</span><span>khách</span></span>
@@ -120,7 +121,7 @@ input::placeholder{color:#7d6a52}
   <div id="toast" role="status"></div>
   <div id="gate">
     <form id="gateForm">
-      <h1>Cafe 247</h1>
+      <h1>Café 247 Online</h1>
       <p>Nhập tên, chọn nhân vật rồi vào quán. Chọn chỗ ngồi, gọi cà phê và trò chuyện cùng khách quen.</p>
       <label for="dharma">Tên của bạn</label>
       <input id="dharma" name="dharma" maxlength="20" autocomplete="nickname" placeholder="Ví dụ: Minh, Thảo, An…" required>
@@ -135,7 +136,7 @@ input::placeholder{color:#7d6a52}
         <span class="hint">Chạm vào quán để bắt đầu trò chuyện.</span>
       </div>
       <div class="row">
-        <span class="hint">Một góc nhỏ bình yên trong con hẻm Việt Nam</span>
+        <span class="hint">Một góc cà phê thân quen, luôn mở cửa trực tuyến</span>
       </div>
       <div class="row">
         <span class="hint" id="voiceInfo"></span>
@@ -170,29 +171,22 @@ const hasAnim = k => false; // Use café sprites: guests hold coffee instead of 
 const FLOOR = { yTop: 500, yBot: 1760, xHalfTop: 220, xHalfBot: 480 };
 // Table anchors follow the garden café artwork; the user starts at the upper-right table with Thảo.
 const TABLES = [
-  // Anchor points match the empty tables in the clean Café 247 background.
-  {x:545,y:790,r:72,scale:.36},
-  {x:250,y:1050,r:78,scale:.40},
-  {x:815,y:1050,r:78,scale:.40},
-  {x:250,y:1420,r:84,scale:.44},
-  {x:815,y:1420,r:84,scale:.44}
+  // Bàn ghế đã có sẵn trong hình nền; vị trí ghế căn theo ảnh 1080 × 1920.
+  {x:540,y:735,r:62,scale:.235},
+  {x:250,y:1020,r:66,scale:.245},
+  {x:815,y:1020,r:66,scale:.245},
+  {x:250,y:1400,r:72,scale:.255},
+  {x:815,y:1400,r:72,scale:.255}
 ];
 const seats = [];
 TABLES.forEach((tb,ti)=>{
   const depth = Math.max(0,Math.min(1,(tb.y-FLOOR.yTop)/(FLOOR.yBot-FLOOR.yTop)));
-  // Two well-spaced seats per table, in front of the tabletop.
-  [-1,1].forEach((side,si)=>{
-    seats.push({
-      x:tb.x + side*(ti===0?92:112),
-      y:tb.y + (ti===0?45:52),
-      scale:tb.scale,
-      r:Math.round(depth*10),
-      c:si,
-      table:ti,
-      taken:null,
-      order:ti*2+si
-    });
-  });
+  // Hai ghế mỗi bàn; nhân vật được thu nhỏ để không lớn hơn ghế nền.
+  const positions = ti===0 ? [[-118,105],[118,105]] : [[-84,88],[84,88]];
+  positions.forEach(([dx,dy],si)=>seats.push({
+    x:tb.x+dx, y:tb.y+dy, scale:tb.scale, r:Math.round(depth*10),
+    c:si, table:ti, taken:null, order:ti*2+si
+  }));
 });
 function drawCafeTables(){
   for(const tb of TABLES){
@@ -223,7 +217,7 @@ const DOOR = { x: SW/2, y: SH + 80 };         // walk in from below the frame
 
 /* ---- visitors ---- */
 const visitors = [], fx = [], floaters = [];
-const SKINS = ['granny','man2','woman','man','woman2','child','man3','woman3'];
+const SKINS = ['granny','man','woman','woman','man','granny','woman','man'];
 function freeSeat(){ return seats.find(s=>!s.taken) || null; }
 const MAX_GUESTS = 5; // Tối đa 5 khách/người chơi cùng lúc
 function addVisitor(name, skin, instant, isMe){
@@ -363,7 +357,7 @@ form.addEventListener('submit', e=>{
   me = addVisitor(name, mySkin, false, true);
   gate.hidden=true; document.getElementById('me').hidden=false; document.getElementById('meName').textContent=name;
   for (const id of ['mute','leave','gifts','nextTrack']) document.getElementById(id).hidden=false;
-  say(name,' đã bước vào quán'); showToast('Chào mừng '+name+' vào quán'); ttsSpeak('Chào mừng '+name+' vào quán');
+  say(name,' đã vào Café 247 Online'); showToast('Chào mừng '+name+' vào quán'); ttsSpeak('Chào mừng '+name+' vào quán');
 });
 document.getElementById('gifts').addEventListener('click', e=>{ const b=e.target.closest('button'); if(!b||!me) return; donate(me, +b.dataset.coins, b.dataset.fx, SUTRA[Math.floor(Math.random()*SUTRA.length)]); });
 document.getElementById('nextTrack').addEventListener('click', ()=>{ if(AC) playTrack(trackIdx+1); });
@@ -435,7 +429,7 @@ function tick(now){
       }
     } else if (v.state==='sitting'){
       v.sitT += dt; v.frame = 4 + Math.min(3, Math.floor(v.sitT/.22));        // 4 frames ≈ 0.9 s to sit down
-      if (v.sitT > .9){ v.state='sit'; v.frame=7; if (v.isMe) showToast('Bạn đã ngồi xuống, gọi món nhé!'); }
+      if (v.sitT > .9){ v.state='sit'; v.frame=7; if (v.isMe) showToast('Bạn đã ngồi xuống, gọi cà phê nhé!'); }
     }
     v.fade = Math.min(1, v.fade + dt*2);
     const sc = v.state==='walk' ? (.22+.33*((v.y-FLOOR.yTop)/(FLOOR.yBot-FLOOR.yTop))) : v.seat.scale;

@@ -213,7 +213,9 @@ const DOOR = { x: SW/2, y: SH + 80 };         // walk in from below the frame
 const visitors = [], fx = [], floaters = [];
 const SKINS = ['man','woman','granny','man','woman','child','man','woman'];
 function freeSeat(){ return seats.find(s=>s.table===1 && !s.taken) || seats.find(s=>!s.taken) || null; }
+const MAX_GUESTS = 5; // Tối đa 5 khách/người chơi cùng lúc
 function addVisitor(name, skin, instant, isMe){
+  if (visitors.length >= MAX_GUESTS) return null;
   const seat = freeSeat(); if(!seat) return null;
   const v = { name, skin, seat, x: instant?seat.x:DOOR.x, y: instant?seat.y:DOOR.y, state: instant?'sit':'walk', t:0, frame: 7, ft:0, sitT:-1, flip:false, fade: instant?1:0, bob:0, bow:0, glow:0, coins:0, isMe:!!isMe, phase:Math.random()*6.28 };
   seat.taken = v; visitors.push(v); updateCount(); return v;
@@ -223,7 +225,7 @@ const countEl = document.getElementById('count');
 function updateCount(){ countEl.textContent = visitors.length; const panel=document.getElementById('chatPanel'); if(typeof renderChatPeople==='function' && panel && panel.style.display==='block') renderChatPeople(); }
 
 // Demo crowd occupies the empty seats; each guest is rendered as a separate clickable sprite.
-const DEMO = ['Chú Ba','Minh','Lan','Anh Quân','Thảo'];
+const DEMO = ['Chú Ba','Minh','Lan','Anh Quân'];
 DEMO.forEach((n,i)=>{ const v = addVisitor(n, SKINS[i%SKINS.length], true); if(v) v.coins = [120,80,55,30,20,12,8,5][i]||0; });
 
 /* ---- audio: Web Audio drone + bell + mõ, no files ---- */

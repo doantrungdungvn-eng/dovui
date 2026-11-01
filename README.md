@@ -66,3 +66,60 @@ Lưu ý bảo mật: đây là lớp khóa giao diện quản trị, còn quyề
 1. Trong Supabase SQL Editor, chạy `supabase/setup_prudential_topics.sql` để tạo bảng `quiz_topics` (nếu thiếu), bật RLS policies và thêm/cập nhật 20 câu hỏi Prudential.
 2. Deploy phiên bản source mới lên Vercel.
 3. Mở lại tab MC / TV; danh sách chủ đề sẽ tải từ `quiz_topics`.
+
+
+## Kiểm thử tự động 20 người
+
+Các lệnh dưới đây dùng Playwright để mở 20 trình duyệt độc lập. Bài kiểm thử không thay thế việc quan sát Vercel/Supabase và không thể tự khẳng định hệ thống ổn định nếu chỉ chạy một lần.
+
+### Cài đặt
+
+```bash
+npm install
+npx playwright install chromium
+```
+
+### 1. Kiểm tra 20 lượt truy cập trang chủ
+
+Windows PowerShell:
+
+```powershell
+$env:BASE_URL="https://dovui-nu.vercel.app"
+$env:USERS="20"
+npm run test:load
+```
+
+Kết quả được ghi vào `test-results/report.json`. Bài test ghi nhận HTTP status, thời gian tải, lỗi JavaScript và các mốc thời gian min/median/p95/max.
+
+### 2. Kiểm tra 20 người cùng tham gia một phòng
+
+**Chỉ dùng mã phòng thử nghiệm**, không dùng phòng sự kiện thật vì script tạo 20 người chơi trong Supabase.
+
+1. Mở website, vào màn hình MC/TV và tạo một phòng thử nghiệm.
+2. Đảm bảo phòng đang ở trạng thái chờ (lobby), chưa bắt đầu câu hỏi.
+3. Chạy lệnh PowerShell, thay `ABC123` bằng mã phòng vừa tạo:
+
+```powershell
+$env:BASE_URL="https://dovui-nu.vercel.app"
+$env:USERS="20"
+$env:ROOM_CODE="ABC123"
+$env:JOIN_ROOM="true"
+npm run test:load
+```
+
+Bài test cố gắng tạo 20 người chơi tên `TEST-01` đến `TEST-20`, rồi kiểm tra giao diện báo đã vào phòng. Sau đó kiểm tra màn hình MC xem số người chơi có tăng lên 20 không. Xóa dữ liệu thử nghiệm sau khi hoàn tất nếu cần.
+
+### Cách đọc kết quả
+
+- `successfulLoads`: số lượt có HTTP 2xx/3xx và trang tải được.
+- `failedLoads`: lượt tải lỗi hoặc timeout.
+- `successfulJoins`: số người test nhìn thấy giao diện đã vào phòng; kiểm tra thêm danh sách người chơi ở MC để xác nhận trên database.
+- `p95`: 95% lượt tải hoàn tất trong khoảng thời gian này hoặc nhanh hơn.
+- `errors`: lỗi JavaScript/console hoặc lỗi thao tác.
+
+### Giới hạn cần biết
+
+- Đây là kiểm thử trình duyệt mức cơ bản; không tự động bấm đáp án và xác nhận tính điểm.
+- 20 context chạy trên cùng một máy tính không hoàn toàn tương đương 20 điện thoại/mạng độc lập.
+- Bài test có thể tạo dữ liệu người chơi thật trong dự án Supabase cấu hình hiện tại. Dùng phòng thử nghiệm, không chạy lặp trên phòng sự kiện thật.
+- Không chạy số lượng lớn trên production nếu chưa được phép; tăng tải từ từ và theo dõi Vercel Logs/Observability cùng Supabase Database/Realtime.

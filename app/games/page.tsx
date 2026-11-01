@@ -4,7 +4,7 @@ import "./games.css";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { supabase } from "@/lib/supabase";
+import { supabase, configured } from "@/lib/supabase";
 import { Trophy, Users, QrCode, Play, Pause, RotateCcw, Volume2, VolumeX, Gamepad2, Copy, ArrowRight, Crown, Wifi, WifiOff } from "lucide-react";
 
 type Piece = { shape: number[][]; color: string };
@@ -62,7 +62,18 @@ export default function Home() {
     if(stored) { setPlayer(stored); setNameInput(stored); }
     const best = Number(typeof window !== "undefined" ? localStorage.getItem("tetris-pro-best") : 0);
     setScores(best ? [{id:"local",player_name:stored || "Bạn",best_score:best}] : []);
-    if(supabase) setConnected(true);
+    setConnected(configured);
+    if (configured) {
+      void supabase
+        .from("tetris_scores")
+        .select("id,player_name,best_score,created_at")
+        .order("best_score", { ascending: false })
+        .limit(20)
+        .then(({ data, error }) => {
+          if (data && !error) setScores(data as ScoreRow[]);
+          if (error) setNotice("Chưa đọc được bảng xếp hạng Supabase. Hãy kiểm tra SQL và RLS.");
+        });
+    }
   },[]);
 
   const collision = useCallback((shape:number[][], x:number, y:number, b:string[][]) => {
@@ -91,17 +102,42 @@ export default function Home() {
   },[collision,level,next]);
 
   const saveResult = useCallback(async (finalScore:number) => {
-    const who=player || "Người chơi";
-    const old=Number(localStorage.getItem("tetris-pro-best")||0);
-    if(finalScore>old) localStorage.setItem("tetris-pro-best",String(finalScore));
-    if(supabase) {
-      await supabase.from("tetris_scores").upsert({player_name:who,best_score:Math.max(old,finalScore)}, {onConflict:"player_name"});
-      const {data}=await supabase.from("tetris_scores").select("id,player_name,best_score,created_at").order("best_score",{ascending:false}).limit(20);
-      if(data) setScores(data as ScoreRow[]);
-    } else {
-      setScores([{id:"local",player_name:who,best_score:Math.max(old,finalScore)}]);
+    const who = (player || "Người chơi").trim().slice(0, 24);
+    const old = Number(localStorage.getItem("tetris-pro-best") || 0);
+    const best = Math.max(old, finalScore);
+    if (finalScore > old) localStorage.setItem("tetris-pro-best", String(finalScore));
+
+    if (!configured) {
+      setScores([{ id: "local", player_name: who, best_score: best }]);
+      setNotice("Điểm đã lưu trên thiết bị này. Muốn xếp hạng chung, hãy cấu hình Supabase.");
+      return;
     }
-  },[player]);
+
+    const { error: saveError } = await supabase
+      .from("tetris_scores")
+      .upsert({ player_name: who, best_score: best }, { onConflict: "player_name" });
+    if (saveError) {
+      setNotice("Chưa lưu được điểm lên Supabase: " + saveError.message);
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("tetris_scores")
+      .select("id,player_name,best_score,created_at")
+      .order("best_score", { ascending: false })
+      .limit(50);
+    if (error) setNotice("Đã lưu điểm nhưng chưa tải được bảng xếp hạng: " + error.message);
+    else if (data) {
+      setScores(data as ScoreRow[]);
+      setNotice("Đã lưu điểm lên bảng xếp hạng trực tuyến.");
+    }
+  }, [player]);
+
+  useEffect(() => {
+    if (!gameOver || finalRanked) return;
+    setFinalRanked(true);
+    void saveResult(score);
+  }, [gameOver, finalRanked, score, saveResult]);
 
   const startGame = () => {
     if(!player.trim()){setNotice("Hãy nhập tên người chơi trước khi bắt đầu.");return;}
@@ -156,6 +192,22 @@ export default function Home() {
     return()=>window.clearInterval(timer);
   },[running,level,move]);
 
+  // Đếm ngược khi bật chế độ giới hạn thời gian.
+  useEffect(() => {
+    if (!running || !timedMode) return;
+    const timer = window.setInterval(() => {
+      setTimeLeft((current) => Math.max(0, current - 1));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [running, timedMode]);
+
+  useEffect(() => {
+    if (running && timedMode && timeLeft === 0) {
+      setRunning(false);
+      setGameOver(true);
+    }
+  }, [running, timedMode, timeLeft]);
+
   const visibleBoard=useMemo(()=>{
     const b=board.map(r=>[...r]);
     piece.shape.forEach((row,sy)=>row.forEach((v,sx)=>{
@@ -178,11 +230,11 @@ export default function Home() {
   };
   const loadLeaderboard=async()=>{
     setMode("leaderboard");
-    if(supabase){
+    if(configured){
       const {data,error}=await supabase.from("tetris_scores").select("id,player_name,best_score,created_at").order("best_score",{ascending:false}).limit(50);
-      if(data)setScores(data as ScoreRow[]);
-      if(error)setNotice("Chưa đọc được bảng xếp hạng. Hãy kiểm tra cấu hình Supabase.");
-    } else setNotice("Bảng điểm hiện đang ở chế độ demo trên thiết bị này. Kết nối Supabase để đồng bộ trực tuyến.");
+      if(data && !error)setScores(data as ScoreRow[]);
+      if(error)setNotice("Chưa đọc được bảng xếp hạng: " + error.message);
+    } else setNotice("Bảng điểm đang lưu trên thiết bị. Hãy thêm NEXT_PUBLIC_SUPABASE_URL và NEXT_PUBLIC_SUPABASE_ANON_KEY trên Vercel để đồng bộ trực tuyến.");
   };
   useEffect(()=>{
     const params=new URLSearchParams(window.location.search);const room=params.get("room");

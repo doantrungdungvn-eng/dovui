@@ -25,6 +25,11 @@ body{background:var(--bg);color:var(--fg);font-family:var(--body);overflow:hidde
 #stage{position:relative;aspect-ratio:9/16;height:min(100%,100dvh);width:auto;max-width:100vw;max-height:100dvh;overflow:hidden;background:#000;box-shadow:0 0 45px rgba(0,0,0,.55)}
 @media (max-aspect-ratio:9/16){#stage{width:100vw;height:auto;max-height:100dvh}}
 #stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:manipulation}
+/* Brand title sits over the blank wooden sign in the clean background. */
+#brandSign{position:absolute;z-index:2;top:10.3%;left:50%;transform:translateX(-50%);width:70%;text-align:center;pointer-events:none;
+  font-family:var(--display);font-weight:700;font-size:clamp(19px,5.5vw,60px);line-height:1.05;letter-spacing:-.035em;
+  color:#fff1d4;-webkit-text-stroke:1px #5c260e;text-shadow:0 3px 0 #5b240b,0 6px 12px #1b0a03,0 0 18px #f7a51c}
+#brandSign span{color:#ffd126}
 /* HUD lives inside the stage so it matches the 9:16 stream frame */
 .hud{position:absolute;z-index:5;pointer-events:none;display:flex;gap:8px;align-items:center}
 .hud *{pointer-events:auto}
@@ -116,7 +121,7 @@ input::placeholder{color:#7d6a52}
   <div id="gate">
     <form id="gateForm">
       <h1>Cafe 247</h1>
-      <p>Nhập Tên của bạn, chọn y phục rồi vào an tọa. Khám phá quán, chọn chỗ ngồi, gọi đồ uống và trò chuyện cùng khách quen.</p>
+      <p>Nhập tên, chọn nhân vật rồi vào quán. Chọn chỗ ngồi, gọi cà phê và trò chuyện cùng khách quen.</p>
       <label for="dharma">Tên của bạn</label>
       <input id="dharma" name="dharma" maxlength="20" autocomplete="nickname" placeholder="Ví dụ: Minh, Thảo, An…" required>
       <label>Nhân vật</label>
@@ -149,8 +154,8 @@ const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
 const A = {};   // loaded images
 const ASSETS = {
   hall:'assets/hall-cafe247.png',
-  monk:'assets/c_monk.png', nun:'assets/c_nun.png', granny:'assets/c_granny.png', man:'assets/c_man.png', woman:'assets/c_woman.png', child:'assets/c_child.png',
-  anim_man:'assets/anim_man.png', anim_woman:'assets/anim_woman.png', anim_granny:'assets/anim_granny.png',
+  granny:'assets/c_granny.png', man:'assets/c_man.png', woman:'assets/c_woman.png', child:'assets/c_child.png',
+  man2:'assets/c_man2.png', woman2:'assets/c_woman2.png', man3:'assets/c_man3.png', woman3:'assets/c_woman3.png',
   lotus:'assets/fx_lotus.png', halo:'assets/fx_halo.png', bell:'assets/fx_bell.png', incense:'assets/fx_incense.png', petal:'assets/fx_petal.png', mo:'assets/fx_mo.png', banner:'assets/fx_banner.png', scroll:'assets/fx_scroll.png',
 };
 let loaded = 0; const total = Object.keys(ASSETS).length;
@@ -159,29 +164,36 @@ for (const [k,src] of Object.entries(ASSETS)) { const im = new Image(); im.onloa
 /* ---- walk / sit-down sprite strips (8 frames: 0-3 walk from behind, 4-7 sitting down onto the cushion) ----
    seatH = height of the seated frame incl. cushion, used to match the static seated sprites (260px). */
 const ANIM = { man:{fw:212,fh:300,seatH:210}, woman:{fw:212,fh:300,seatH:220}, granny:{fw:195,fh:300,seatH:222} };
-const hasAnim = k => ANIM[k] && A['anim_'+k] && A['anim_'+k].naturalWidth > 0;
+const hasAnim = k => false; // Use café sprites: guests hold coffee instead of praying.
 
 /* ---- Floor layout: clean garden illustration has empty round tables; visitors are live sprites. ---- */
 const FLOOR = { yTop: 500, yBot: 1760, xHalfTop: 220, xHalfBot: 480 };
 // Table anchors follow the garden café artwork; the user starts at the upper-right table with Thảo.
 const TABLES = [
-  {x:285,y:650,r:48,scale:.38}, {x:670,y:620,r:52,scale:.40},
-  {x:500,y:880,r:48,scale:.40}, {x:780,y:1030,r:52,scale:.43},
-  {x:470,y:1220,r:55,scale:.46}, {x:790,y:1460,r:58,scale:.49},
-  {x:410,y:1600,r:60,scale:.51}, {x:190,y:1120,r:50,scale:.43}
+  // Anchor points match the empty tables in the clean Café 247 background.
+  {x:545,y:790,r:72,scale:.36},
+  {x:250,y:1050,r:78,scale:.40},
+  {x:815,y:1050,r:78,scale:.40},
+  {x:250,y:1420,r:84,scale:.44},
+  {x:815,y:1420,r:84,scale:.44}
 ];
 const seats = [];
 TABLES.forEach((tb,ti)=>{
-  const angles = [-Math.PI/2, 0, Math.PI/2, Math.PI];
-  angles.forEach((a,si)=>{
-    const depth = Math.max(0,Math.min(1,(tb.y-FLOOR.yTop)/(FLOOR.yBot-FLOOR.yTop)));
-    const dist = tb.r*1.22;
-    seats.push({x:tb.x+Math.cos(a)*dist, y:tb.y+Math.sin(a)*dist*.62+tb.r*.34,
-      scale:tb.scale, r:Math.round(depth*10), c:si, table:ti, taken:null, order:ti*4+si});
+  const depth = Math.max(0,Math.min(1,(tb.y-FLOOR.yTop)/(FLOOR.yBot-FLOOR.yTop)));
+  // Two well-spaced seats per table, in front of the tabletop.
+  [-1,1].forEach((side,si)=>{
+    seats.push({
+      x:tb.x + side*(ti===0?92:112),
+      y:tb.y + (ti===0?45:52),
+      scale:tb.scale,
+      r:Math.round(depth*10),
+      c:si,
+      table:ti,
+      taken:null,
+      order:ti*2+si
+    });
   });
 });
-// Put the signed-in player at the upper-right table so the avatar and name tag appear inside the café.
-seats.sort((a,b)=> (a.table===1? -1 : b.table===1? 1 : (b.y-a.y)));
 function drawCafeTables(){
   for(const tb of TABLES){
     const k=tb.scale/.32;
@@ -211,8 +223,8 @@ const DOOR = { x: SW/2, y: SH + 80 };         // walk in from below the frame
 
 /* ---- visitors ---- */
 const visitors = [], fx = [], floaters = [];
-const SKINS = ['man','woman','granny','man','woman','child','man','woman'];
-function freeSeat(){ return seats.find(s=>s.table===1 && !s.taken) || seats.find(s=>!s.taken) || null; }
+const SKINS = ['granny','man2','woman','man','woman2','child','man3','woman3'];
+function freeSeat(){ return seats.find(s=>!s.taken) || null; }
 const MAX_GUESTS = 5; // Tối đa 5 khách/người chơi cùng lúc
 function addVisitor(name, skin, instant, isMe){
   if (visitors.length >= MAX_GUESTS) return null;
@@ -441,7 +453,7 @@ function tick(now){
       if (v.flip) ctx.scale(-1,1);
       ctx.drawImage(A['anim_'+v.skin], v.frame*a.fw, 0, a.fw, a.fh, -a.fw*k/2, -a.fh*k + breathe, a.fw*k, a.fh*k);
       tagH = (v.state==='sit' ? a.seatH : a.fh*.97) * k;
-    } else { drawSprite(A[v.skin]||A.man, 0, breathe, s*1.05, 1); tagH = 268*s; }
+    } else { drawSprite(A[v.skin]||A.man, 0, breathe, s*1.05, 1); tagH = 300*s; }
     ctx.restore();
     nameTag(v.name, v.x, v.y - tagH - 10*s, s, v.isMe);
   }

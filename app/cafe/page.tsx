@@ -11,7 +11,7 @@ export default function CafePage() {
     >
       <iframe
         src="/cafe/index.html"
-        title="Cafe Đầu Hẻm"
+        title="Café 247"
         style={{
           display: "block",
           width: "100%",

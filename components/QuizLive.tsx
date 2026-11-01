@@ -60,6 +60,13 @@ export default function QuizLive() {
  const audioContextRef = useRef<AudioContext|null>(null);
  const musicTimerRef = useRef<number|null>(null);
  const musicStepRef = useRef(0);
+ // Coalesce bursts of Realtime events so a full room does not trigger a query per event.
+ const playersRefreshTimerRef = useRef<number | null>(null);
+ const answerRefreshTimerRef = useRef<number | null>(null);
+ const tabRef = useRef(tab);
+ const questionIndexRef = useRef(questionIndex);
+ tabRef.current = tab;
+ questionIndexRef.current = questionIndex;
 
  const activeQuestion = useMemo(()=>questions[questionIndex] || null,[questions,questionIndex]);
 
@@ -128,11 +135,31 @@ export default function QuizLive() {
          else setShowCorrect(false);
        }
      })
-     .on("postgres_changes",{event:"*",schema:"public",table:"quiz_players",filter:`room_id=eq.${room.id}`},()=>refreshPlayers(room.id))
-     .on("postgres_changes",{event:"*",schema:"public",table:"quiz_answers",filter:`room_id=eq.${room.id}`},()=>refreshAnswerCount(room.id))
+     .on("postgres_changes",{event:"*",schema:"public",table:"quiz_players",filter:`room_id=eq.${room.id}`},()=>{
+       // Joining/scoring can emit many events in a short burst. Refresh once after the burst.
+       if (playersRefreshTimerRef.current !== null) window.clearTimeout(playersRefreshTimerRef.current);
+       playersRefreshTimerRef.current = window.setTimeout(()=>{
+         playersRefreshTimerRef.current = null;
+         void refreshPlayers(room.id);
+       }, 450);
+     })
+     .on("postgres_changes",{event:"*",schema:"public",table:"quiz_answers",filter:`room_id=eq.${room.id}`},()=>{
+       // Only the MC needs the live answer counter; players do not need one COUNT query per answer.
+       if (tabRef.current !== "host") return;
+       if (answerRefreshTimerRef.current !== null) window.clearTimeout(answerRefreshTimerRef.current);
+       answerRefreshTimerRef.current = window.setTimeout(()=>{
+         answerRefreshTimerRef.current = null;
+         void refreshAnswerCount(room.id);
+       }, 450);
+     })
      .subscribe();
-   refreshPlayers(room.id); refreshAnswerCount(room.id);
-   return ()=>{supabase.removeChannel(channel);};
+   void refreshPlayers(room.id);
+   if (tabRef.current === "host") void refreshAnswerCount(room.id);
+   return ()=>{
+     supabase.removeChannel(channel);
+     if (playersRefreshTimerRef.current !== null) { window.clearTimeout(playersRefreshTimerRef.current); playersRefreshTimerRef.current = null; }
+     if (answerRefreshTimerRef.current !== null) { window.clearTimeout(answerRefreshTimerRef.current); answerRefreshTimerRef.current = null; }
+   };
  },[room?.id]);
 
  useEffect(()=>{
@@ -146,7 +173,7 @@ export default function QuizLive() {
    if(data){setPlayers(data as Player[]);setTop(data.slice(0,10) as Player[]);}
  }
  async function refreshAnswerCount(id:string) {
-   const {count}=await supabase.from("quiz_answers").select("*",{count:"exact",head:true}).eq("room_id",id).eq("question_index",questionIndex);
+   const {count}=await supabase.from("quiz_answers").select("*",{count:"exact",head:true}).eq("room_id",id).eq("question_index",questionIndexRef.current);
    setAnswerCount(count||0);
  }
  function notify(s:string){setMessage(s);setTimeout(()=>setMessage(""),4000);}

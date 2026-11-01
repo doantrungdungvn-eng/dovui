@@ -6,8 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
-    "test:load": "node tests/test-20-users.mjs"
+    "lint": "next lint"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",
@@ -22,7 +21,6 @@
   "devDependencies": {
     "@types/node": "^22.13.4",
     "@types/react": "^18.3.18",
-    "typescript": "^5.7.3",
-    "playwright": "^1.55.0"
+    "typescript": "^5.7.3"
   }
 }

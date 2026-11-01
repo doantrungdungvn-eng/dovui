@@ -184,7 +184,10 @@ TABLES.forEach((tb,ti)=>{
   // Hai ghế mỗi bàn; nhân vật được thu nhỏ để không lớn hơn ghế nền.
   const positions = ti===0 ? [[-118,105],[118,105]] : [[-84,88],[84,88]];
   positions.forEach(([dx,dy],si)=>seats.push({
-    x:tb.x+dx, y:tb.y+dy, scale:tb.scale, r:Math.round(depth*10),
+    // Anchor at the front edge of each chair so the character sits on the seat, not on the tabletop.
+    x:tb.x+dx, y:tb.y+dy-18, scale:tb.scale, r:Math.round(depth*10),
+    // Left chair looks toward the table centre from the left; right chair faces inward from the right.
+    facing: si===0 ? 1 : -1,
     c:si, table:ti, taken:null, order:ti*2+si
   }));
 });
@@ -223,7 +226,7 @@ const MAX_GUESTS = 5; // Tối đa 5 khách/người chơi cùng lúc
 function addVisitor(name, skin, instant, isMe){
   if (visitors.length >= MAX_GUESTS) return null;
   const seat = freeSeat(); if(!seat) return null;
-  const v = { name, skin, seat, x: instant?seat.x:DOOR.x, y: instant?seat.y:DOOR.y, state: instant?'sit':'walk', t:0, frame: 7, ft:0, sitT:-1, flip:false, fade: instant?1:0, bob:0, bow:0, glow:0, coins:0, isMe:!!isMe, phase:Math.random()*6.28 };
+  const v = { name, skin, seat, x: instant?seat.x:DOOR.x, y: instant?seat.y:DOOR.y, state: instant?'sit':'walk', t:0, frame: 7, ft:0, sitT:-1, flip:seat.facing<0, fade: instant?1:0, bob:0, bow:0, glow:0, coins:0, isMe:!!isMe, phase:Math.random()*6.28 };
   seat.taken = v; visitors.push(v); updateCount(); return v;
 }
 function removeVisitor(v){ if(!v) return; v.seat.taken=null; visitors.splice(visitors.indexOf(v),1); updateCount(); }
@@ -447,7 +450,7 @@ function tick(now){
       if (v.flip) ctx.scale(-1,1);
       ctx.drawImage(A['anim_'+v.skin], v.frame*a.fw, 0, a.fw, a.fh, -a.fw*k/2, -a.fh*k + breathe, a.fw*k, a.fh*k);
       tagH = (v.state==='sit' ? a.seatH : a.fh*.97) * k;
-    } else { drawSprite(A[v.skin]||A.man, 0, breathe, s*1.05, 1); tagH = 300*s; }
+    } else { if (v.seat && v.seat.facing<0) ctx.scale(-1,1); drawSprite(A[v.skin]||A.man, 0, breathe, s*1.05, 1); tagH = 300*s; }
     ctx.restore();
     nameTag(v.name, v.x, v.y - tagH - 10*s, s, v.isMe);
   }

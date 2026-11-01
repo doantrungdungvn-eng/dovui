@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="Cafe Đầu Hẻm: bước vào quán, chọn chỗ ngồi, uống cà phê và trò chuyện cùng mọi người.">
+<meta name="description" content="Cafe 247: bước vào quán, chọn chỗ ngồi, gọi cà phê và trò chuyện cùng mọi người.">
 <meta name="theme-color" content="#0c0705">
-<meta property="og:title" content="Cafe Đầu Hẻm · Quán cà phê ảo">
-<meta property="og:image" content="/assets/hall.jpg">
-<title>Cafe Đầu Hẻm · Quán cà phê ảo</title>
+<meta property="og:title" content="Cafe 247 · Quán cà phê ảo">
+<meta property="og:image" content="/cafe/assets/hall-cafe247.png">
+<title>Cafe 247 · Quán cà phê ảo</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif:ital,wght@0,400;0,600;1,400&family=Be+Vietnam+Pro:wght@400;500;600&display=swap">
 <style>
 /* Responsive 9:16 café stage; clean garden background with no baked-in people or interface. */
@@ -115,7 +115,7 @@ input::placeholder{color:#7d6a52}
   <div id="toast" role="status"></div>
   <div id="gate">
     <form id="gateForm">
-      <h1>Cafe Đầu Hẻm</h1>
+      <h1>Cafe 247</h1>
       <p>Nhập Tên của bạn, chọn y phục rồi vào an tọa. Khám phá quán, chọn chỗ ngồi, gọi đồ uống và trò chuyện cùng khách quen.</p>
       <label for="dharma">Tên của bạn</label>
       <input id="dharma" name="dharma" maxlength="20" autocomplete="nickname" placeholder="Ví dụ: Minh, Thảo, An…" required>
@@ -148,7 +148,7 @@ const SW = 1080, SH = 1920;
 const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
 const A = {};   // loaded images
 const ASSETS = {
-  hall:'assets/hall.svg',
+  hall:'assets/hall-cafe247.png',
   monk:'assets/c_monk.png', nun:'assets/c_nun.png', granny:'assets/c_granny.png', man:'assets/c_man.png', woman:'assets/c_woman.png', child:'assets/c_child.png',
   anim_man:'assets/anim_man.png', anim_woman:'assets/anim_woman.png', anim_granny:'assets/anim_granny.png',
   lotus:'assets/fx_lotus.png', halo:'assets/fx_halo.png', bell:'assets/fx_bell.png', incense:'assets/fx_incense.png', petal:'assets/fx_petal.png', mo:'assets/fx_mo.png', banner:'assets/fx_banner.png', scroll:'assets/fx_scroll.png',
@@ -307,7 +307,7 @@ function renderChatPeople(){
   });
 }
 function addChatLine(name,text){const d=document.createElement('div');d.className='chatLine';const b=document.createElement('b');b.textContent=name+': ';d.append(b,document.createTextNode(text));chatLog.append(d);chatLog.scrollTop=chatLog.scrollHeight;}
-function openGroupChat(v){if(!v||v===me)return; if(!chatSelected.includes(v)){if(chatSelected.length>=3)chatSelected.shift();chatSelected.push(v);}chatPanel.style.display='block';renderChatPeople();document.getElementById('chatMessage').focus();addChatLine('Cafe Đầu Hẻm','Bạn đang chọn '+chatSelected.map(x=>x.name).join(', ')+'. Có thể chọn thêm tối đa 3 khách.');}
+function openGroupChat(v){if(!v||v===me)return; if(!chatSelected.includes(v)){if(chatSelected.length>=3)chatSelected.shift();chatSelected.push(v);}chatPanel.style.display='block';renderChatPeople();document.getElementById('chatMessage').focus();addChatLine('Cafe 247','Bạn đang chọn '+chatSelected.map(x=>x.name).join(', ')+'. Có thể chọn thêm tối đa 3 khách.');}
 document.getElementById('closeChat').addEventListener('click',()=>chatPanel.style.display='none');
 document.getElementById('chatForm').addEventListener('submit',e=>{e.preventDefault();const input=document.getElementById('chatMessage');const message=input.value.trim();if(!message)return;if(!chatSelected.length){showToast('Hãy chọn ít nhất một nhân vật để trò chuyện.');return;}addChatLine(me?me.name:'Bạn',message);say(me?me.name:'Bạn',' nói chuyện cùng '+chatSelected.map(x=>x.name).join(', '));input.value='';const group=[...chatSelected];setTimeout(()=>{group.forEach((v,i)=>{if(!visitors.includes(v))return;const line=CHAT_LINES[Math.floor(Math.random()*CHAT_LINES.length)];addChatLine(v.name,line);say(v.name,' '+line);v.bow=1;});},650);});
 

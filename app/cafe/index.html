@@ -223,7 +223,7 @@ const countEl = document.getElementById('count');
 function updateCount(){ countEl.textContent = visitors.length; const panel=document.getElementById('chatPanel'); if(typeof renderChatPeople==='function' && panel && panel.style.display==='block') renderChatPeople(); }
 
 // Demo crowd occupies the empty seats; each guest is rendered as a separate clickable sprite.
-const DEMO = ['Chú Ba','Minh','Lan','Anh Quân','Thảo','Bắp','Cô Hạnh','Tuấn','Mai','Cô chủ quán','Hải','Vy','Nam','Hương','Bình','Trang','Duy','Ngọc','Phúc','Linh','An','Khoa'];
+const DEMO = ['Chú Ba','Minh','Lan','Anh Quân','Thảo'];
 DEMO.forEach((n,i)=>{ const v = addVisitor(n, SKINS[i%SKINS.length], true); if(v) v.coins = [120,80,55,30,20,12,8,5][i]||0; });
 
 /* ---- audio: Web Audio drone + bell + mõ, no files ---- */

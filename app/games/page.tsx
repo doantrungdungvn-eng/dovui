@@ -126,18 +126,29 @@ export default function Home() {
     if(!collision(rotated.shape,at.x,at.y,boardRef.current)){setPiece(rotated);pieceRef.current=rotated;}
   },[collision]);
 
+  // Thả khối ngay xuống vị trí thấp nhất khi người chơi bấm nút xuống.
+  const hardDrop = useCallback(() => {
+    if(!runningRef.current)return;
+    let count=0;
+    while(count++ < ROWS && !collision(pieceRef.current.shape, posRef.current.x, posRef.current.y+1, boardRef.current)) {
+      move(0,1);
+    }
+    // Gọi thêm một bước để khóa khối tại vị trí cuối cùng.
+    move(0,1);
+  },[collision,move]);
+
   useEffect(()=>{
     const onKey=(e:KeyboardEvent)=>{
       if(["ArrowLeft","ArrowRight","ArrowDown","ArrowUp"," "].includes(e.key)) e.preventDefault();
       if(e.key==="ArrowLeft"||e.key==="a")move(-1,0);
       if(e.key==="ArrowRight"||e.key==="d")move(1,0);
-      if(e.key==="ArrowDown"||e.key==="s")move(0,1);
+      if(e.key==="ArrowDown"||e.key==="s")hardDrop();
       if(e.key==="ArrowUp"||e.key==="w")rotatePiece();
-      if(e.key===" " && runningRef.current){let count=0;while(count++<ROWS && !collision(pieceRef.current.shape,posRef.current.x,posRef.current.y+1,boardRef.current))move(0,1);move(0,1);}
+      if(e.key===" " && runningRef.current)hardDrop();
       if(e.key==="Escape")setRunning(v=>!v);
     };
     window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey);
-  },[move,rotatePiece,collision]);
+  },[move,rotatePiece,hardDrop]);
 
   useEffect(()=>{
     if(!running)return;
@@ -217,11 +228,11 @@ export default function Home() {
             <div className="stat-box"><span>ĐIỂM SỐ</span><strong>{score.toLocaleString("vi-VN")}</strong></div>
             <div className="stat-row"><div className="mini-stat"><span>LEVEL</span><b>{level}</b></div><div className="mini-stat"><span>LINES</span><b>{lines}</b></div></div><div className={`stat-box timer-stat ${timedMode&&timeLeft<=30?"timer-warning":""}`}><span>{timedMode?"THỜI GIAN CÒN LẠI":"CHẾ ĐỘ THỜI GIAN"}</span><strong>{timedMode?`${String(Math.floor(timeLeft/60)).padStart(2,"0")}:${String(timeLeft%60).padStart(2,"0")}`:"∞"}</strong><div className="timer-options"><label><input type="checkbox" checked={timedMode} onChange={e=>{setTimedMode(e.target.checked);setTimeLeft(durationMinutes*60);setFinalRanked(false);}}/> Giới hạn thời gian</label><select value={durationMinutes} onChange={e=>{setDurationMinutes(Number(e.target.value));setTimeLeft(Number(e.target.value)*60);}} disabled={running&&timedMode}><option value={1}>1 phút</option><option value={3}>3 phút</option><option value={5}>5 phút</option><option value={10}>10 phút</option></select></div></div>
             <div className="next-box"><span>KHỐI TIẾP THEO</span><div className="mini-piece">{next.shape.flatMap((row,y)=>row.map((v,x)=><i key={`${y}-${x}`} style={v?{background:next.color,boxShadow:`0 0 10px ${next.color}`}:{opacity:0}}/>))}</div></div>
-            <div className="controls"><span>ĐIỀU KHIỂN</span><p>← → Di chuyển</p><p>↑ Xoay khối</p><p>↓ Rơi nhanh</p><p>SPACE Thả khối</p><p>ESC Tạm dừng</p></div>
+            <div className="controls"><span>ĐIỀU KHIỂN</span><p>← → Di chuyển</p><p>↑ Xoay khối</p><p>↓ Thả khối ngay</p><p>SPACE Thả khối</p><p>ESC Tạm dừng</p></div>
             <div className="game-actions"><button onClick={()=>setRunning(v=>!v)} disabled={gameOver}><Pause size={15}/>{running?"TẠM DỪNG":"TIẾP TỤC"}</button><button onClick={startGame}><RotateCcw size={15}/> CHƠI LẠI</button></div>
           </aside>
         </div>
-        <div className="mobile-controls"><button onClick={()=>move(-1,0)}>←</button><button onClick={rotatePiece}>↻</button><button onClick={()=>move(0,1)}>↓</button><button onClick={()=>move(1,0)}>→</button></div>
+        <div className="mobile-controls"><button onClick={()=>move(-1,0)}>←</button><button onClick={rotatePiece}>↻</button><button onClick={hardDrop} aria-label="Thả khối xuống ngay">↓</button><button onClick={()=>move(1,0)}>→</button></div>
       </div>
       <aside className="right-column">
         <div className="panel player-panel"><div className="card-heading"><div><span className="section-kicker">PLAYER PROFILE</span><h2>Người chơi</h2></div><div className="avatar">{(player||"?").slice(0,1).toUpperCase()}</div></div><label htmlFor="player-name">Tên hiển thị</label><div className="input-row"><input id="player-name" value={nameInput} maxLength={24} onChange={e=>setNameInput(e.target.value)} onKeyDown={e=>e.key==="Enter"&&saveName()} placeholder="Nhập tên của bạn"/><button onClick={saveName}>Lưu</button></div><div className="profile-foot"><span>Hồ sơ hiện tại</span><b>{player||"Khách"}</b></div></div>

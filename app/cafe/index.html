@@ -172,17 +172,17 @@ const FLOOR = { yTop: 500, yBot: 1760, xHalfTop: 220, xHalfBot: 480 };
 // Table anchors follow the garden café artwork; the user starts at the upper-right table with Thảo.
 const TABLES = [
   // Bàn ghế đã có sẵn trong hình nền; vị trí ghế căn theo ảnh 1080 × 1920.
-  {x:540,y:735,r:62,scale:.235},
-  {x:250,y:1020,r:66,scale:.245},
-  {x:815,y:1020,r:66,scale:.245},
-  {x:250,y:1400,r:72,scale:.255},
-  {x:815,y:1400,r:72,scale:.255}
+  {x:540,y:735,r:62,scale:.31},
+  {x:250,y:1020,r:66,scale:.32},
+  {x:815,y:1020,r:66,scale:.32},
+  {x:250,y:1400,r:72,scale:.33},
+  {x:815,y:1400,r:72,scale:.33}
 ];
 const seats = [];
 TABLES.forEach((tb,ti)=>{
   const depth = Math.max(0,Math.min(1,(tb.y-FLOOR.yTop)/(FLOOR.yBot-FLOOR.yTop)));
-  // Hai ghế mỗi bàn; nhân vật được thu nhỏ để không lớn hơn ghế nền.
-  const positions = ti===0 ? [[-118,105],[118,105]] : [[-84,88],[84,88]];
+  // Hai ghế mỗi bàn; tăng kích thước khách và tách vị trí trái/phải để tránh chồng ghế.
+  const positions = ti===0 ? [[-126,100],[126,100]] : [[-98,82],[98,82]];
   positions.forEach(([dx,dy],si)=>seats.push({
     x:tb.x+dx, y:tb.y+dy, scale:tb.scale, r:Math.round(depth*10),
     c:si, table:ti, taken:null, order:ti*2+si

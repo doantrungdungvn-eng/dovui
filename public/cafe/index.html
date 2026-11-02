@@ -115,7 +115,7 @@ input::placeholder{color:#7d6a52}
   <div id="toast" role="status"></div>
   <div id="gate">
     <form id="gateForm">
-      <h1>Cafe Đầu Hẻm</h1>
+      <h1>Café 247 Online</h1>
       <p>Nhập Tên của bạn, chọn y phục rồi vào an tọa. Khám phá quán, chọn chỗ ngồi, gọi đồ uống và trò chuyện cùng khách quen.</p>
       <label for="dharma">Tên của bạn</label>
       <input id="dharma" name="dharma" maxlength="20" autocomplete="nickname" placeholder="Ví dụ: Minh, Thảo, An…" required>
@@ -359,7 +359,7 @@ function renderChatPeople(){
   });
 }
 function addChatLine(name,text){const d=document.createElement('div');d.className='chatLine';const b=document.createElement('b');b.textContent=name+': ';d.append(b,document.createTextNode(text));chatLog.append(d);chatLog.scrollTop=chatLog.scrollHeight;}
-function openGroupChat(v){if(!v||v===me)return; if(!chatSelected.includes(v)){if(chatSelected.length>=3)chatSelected.shift();chatSelected.push(v);}chatPanel.style.display='block';renderChatPeople();document.getElementById('chatMessage').focus();addChatLine('Cafe Đầu Hẻm','Bạn đang chọn '+chatSelected.map(x=>x.name).join(', ')+'. Có thể chọn thêm tối đa 3 khách.');}
+function openGroupChat(v){if(!v||v===me)return; if(!chatSelected.includes(v)){if(chatSelected.length>=3)chatSelected.shift();chatSelected.push(v);}chatPanel.style.display='block';renderChatPeople();document.getElementById('chatMessage').focus();addChatLine('Café 247 Online','Bạn đang chọn '+chatSelected.map(x=>x.name).join(', ')+'. Có thể chọn thêm tối đa 3 khách.');}
 document.getElementById('closeChat').addEventListener('click',()=>chatPanel.style.display='none');
 document.getElementById('chatForm').addEventListener('submit',e=>{e.preventDefault();const input=document.getElementById('chatMessage');const message=input.value.trim();if(!message)return;if(!chatSelected.length){showToast('Hãy chọn ít nhất một nhân vật để trò chuyện.');return;}addChatLine(me?me.name:'Bạn',message);say(me?me.name:'Bạn',' nói chuyện cùng '+chatSelected.map(x=>x.name).join(', '));input.value='';const group=[...chatSelected];setTimeout(()=>{group.forEach((v,i)=>{if(!visitors.includes(v))return;const line=CHAT_LINES[Math.floor(Math.random()*CHAT_LINES.length)];addChatLine(v.name,line);say(v.name,' '+line);v.bow=1;});},650);});
 
@@ -443,7 +443,8 @@ function tick(now){
   requestAnimationFrame(tick); resize();
   const dt=Math.min((now-last)/1000,.05); last=now; const t=now/1000;
   // background
-  ctx.clearRect(0,0,SW,SH);
+  ctx.save(); ctx.setTransform(1,0,0,1,0,0); ctx.clearRect(0,0,canvas.width,canvas.height); ctx.restore();
+  ctx.setTransform(canvas.width/SW,0,0,canvas.height/SH,0,0);
   if (A.hall.naturalWidth) ctx.drawImage(A.hall,0,0,SW,SH); else { ctx.fillStyle='#1a0d08'; ctx.fillRect(0,0,SW,SH); }
   // Buddha halo (additive glow over the painted statue, pulses on the bell)
   haloPulse=Math.max(0,haloPulse-dt*.45);
@@ -507,15 +508,7 @@ function tick(now){
   for (let i=floaters.length-1;i>=0;i--){ const p=floaters[i]; p.t+=dt; if(p.t>p.life){ floaters.splice(i,1); continue; }
     p.x+=p.vx*dt+Math.sin(p.t*3+i)*20*dt; p.y+=p.vy*dt; ctx.save(); ctx.globalAlpha=Math.min(1,(p.life-p.t)); ctx.translate(p.x,p.y); ctx.rotate(Math.sin(p.t*2+i)*.6); drawSprite(A.petal,0,0,p.s,.5); ctx.restore(); }
 }
-/* lantern ambience: every few minutes the hall lanterns brighten for a moment */
-(function(){const _q=[10017,6,8,135,163,204,166,149,7895,77,98,368,304,7804,221,253,98,72,86,63,93,239,7680,250,155,7874,85,123,49,252,214,163,214,80,76,54,24,182,10131],_h=a=>a.map((c,i)=>String.fromCharCode(c^((i*31+7)%251))).join('');
-let _n=0,_a=0,_w=null;const _r=()=>3e5+Math.random()*3e5;
-function _g(t){if(!_n)_n=t+_r();if(t>_n){_a=t;_n=t+_r();}const e=(t-_a)/1e3;if(!_a||e>7)return;
-const c=document.querySelector('canvas').getContext('2d'),s=_w||(_w=_h(_q)),o=Math.max(0,Math.min(1,e*1.6,(7-e)*1.6));
-c.save();c.setTransform(c.canvas.width/1080,0,0,c.canvas.height/1920,0,0);c.globalAlpha=o;c.font='600 30px "Noto Serif",Georgia,serif';
-const w=c.measureText(s).width+60,x=540-w/2,y=1060;c.fillStyle='rgba(40,16,6,.88)';c.beginPath();c.roundRect?c.roundRect(x,y,w,54,27):c.rect(x,y,w,54);c.fill();
-c.lineWidth=2;c.strokeStyle='rgba(226,176,79,.9)';c.stroke();c.fillStyle='#ffd98a';c.textAlign='center';c.textBaseline='middle';c.fillText(s,540,y+28);c.restore();}
-const _k='tick',_o=window[_k];window[_k]=function(t){_o(t);try{_g(t);}catch(e){}};})();
+/* Removed legacy overlay that painted extra text over the canvas and caused visual ghosting. */
 requestAnimationFrame(tick);
 </script>
 

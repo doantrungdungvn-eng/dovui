@@ -60,13 +60,6 @@ export default function QuizLive() {
  const audioContextRef = useRef<AudioContext|null>(null);
  const musicTimerRef = useRef<number|null>(null);
  const musicStepRef = useRef(0);
- // Coalesce bursts of Realtime events so a full room does not trigger a query per event.
- const playersRefreshTimerRef = useRef<number | null>(null);
- const answerRefreshTimerRef = useRef<number | null>(null);
- const tabRef = useRef(tab);
- const questionIndexRef = useRef(questionIndex);
- tabRef.current = tab;
- questionIndexRef.current = questionIndex;
 
  const activeQuestion = useMemo(()=>questions[questionIndex] || null,[questions,questionIndex]);
 
@@ -135,31 +128,11 @@ export default function QuizLive() {
          else setShowCorrect(false);
        }
      })
-     .on("postgres_changes",{event:"*",schema:"public",table:"quiz_players",filter:`room_id=eq.${room.id}`},()=>{
-       // Joining/scoring can emit many events in a short burst. Refresh once after the burst.
-       if (playersRefreshTimerRef.current !== null) window.clearTimeout(playersRefreshTimerRef.current);
-       playersRefreshTimerRef.current = window.setTimeout(()=>{
-         playersRefreshTimerRef.current = null;
-         void refreshPlayers(room.id);
-       }, 450);
-     })
-     .on("postgres_changes",{event:"*",schema:"public",table:"quiz_answers",filter:`room_id=eq.${room.id}`},()=>{
-       // Only the MC needs the live answer counter; players do not need one COUNT query per answer.
-       if (tabRef.current !== "host") return;
-       if (answerRefreshTimerRef.current !== null) window.clearTimeout(answerRefreshTimerRef.current);
-       answerRefreshTimerRef.current = window.setTimeout(()=>{
-         answerRefreshTimerRef.current = null;
-         void refreshAnswerCount(room.id);
-       }, 450);
-     })
+     .on("postgres_changes",{event:"*",schema:"public",table:"quiz_players",filter:`room_id=eq.${room.id}`},()=>refreshPlayers(room.id))
+     .on("postgres_changes",{event:"*",schema:"public",table:"quiz_answers",filter:`room_id=eq.${room.id}`},()=>refreshAnswerCount(room.id))
      .subscribe();
-   void refreshPlayers(room.id);
-   if (tabRef.current === "host") void refreshAnswerCount(room.id);
-   return ()=>{
-     supabase.removeChannel(channel);
-     if (playersRefreshTimerRef.current !== null) { window.clearTimeout(playersRefreshTimerRef.current); playersRefreshTimerRef.current = null; }
-     if (answerRefreshTimerRef.current !== null) { window.clearTimeout(answerRefreshTimerRef.current); answerRefreshTimerRef.current = null; }
-   };
+   refreshPlayers(room.id); refreshAnswerCount(room.id);
+   return ()=>{supabase.removeChannel(channel);};
  },[room?.id]);
 
  useEffect(()=>{
@@ -173,7 +146,7 @@ export default function QuizLive() {
    if(data){setPlayers(data as Player[]);setTop(data.slice(0,10) as Player[]);}
  }
  async function refreshAnswerCount(id:string) {
-   const {count}=await supabase.from("quiz_answers").select("*",{count:"exact",head:true}).eq("room_id",id).eq("question_index",questionIndexRef.current);
+   const {count}=await supabase.from("quiz_answers").select("*",{count:"exact",head:true}).eq("room_id",id).eq("question_index",questionIndex);
    setAnswerCount(count||0);
  }
  function notify(s:string){setMessage(s);setTimeout(()=>setMessage(""),4000);}
@@ -326,7 +299,7 @@ export default function QuizLive() {
  useEffect(()=>{if(typeof window!=="undefined"){const c=new URLSearchParams(window.location.search).get("join");if(c){setRoomCode(c);setTab("play");}}},[]);
 
  return <main className="app-shell">
-  <header className="topbar"><a className="brand" href="#" onClick={e=>{e.preventDefault();setTab("home")}}><span className="brand-mark"><Radio size={23}/></span><span>ĐỐ VUI ONLINE<small>MIỄN PHÍ · PLAY · LEARN · WIN</small></span></a><nav><button className={tab==="host"?"nav-active":""} onClick={()=>setTab("host")}><MonitorPlay size={17}/> MC / TV</button><button className={tab==="play"?"nav-active":""} onClick={()=>setTab("play")}><Smartphone size={17}/> Người chơi</button><button className={tab==="admin"?"nav-active":""} onClick={()=>setTab("admin")}><Settings size={17}/> Quản trị</button><a className="nav-game-link" href="/games">🎮 Games</a></nav><div className="online-pill"><span/> ĐỐ VUI ONLINE</div><div className="audio-controls"><button type="button" className="audio-toggle" onClick={toggleMusic} aria-pressed={musicEnabled} title={musicEnabled?"Tắt nhạc nền":"Bật nhạc nền"}>{musicEnabled?<Volume2 size={17}/>:<VolumeX size={17}/>} {musicEnabled?"Tắt nhạc":"Bật nhạc"}</button>{musicEnabled&&<label className="volume-control" title="Âm lượng nhạc"><input aria-label="Âm lượng nhạc nền" type="range" min="0" max="0.6" step="0.05" value={musicVolume} onChange={e=>setMusicVolume(Number(e.target.value))}/></label>}</div></header>
+  <header className="topbar"><a className="brand" href="#" onClick={e=>{e.preventDefault();setTab("home")}}><span className="brand-mark"><Radio size={23}/></span><span>ĐỐ VUI ONLINE<small>MIỄN PHÍ · PLAY · LEARN · WIN</small></span></a><nav><button className={tab==="host"?"nav-active":""} onClick={()=>setTab("host")}><MonitorPlay size={17}/> MC / TV</button><button className={tab==="play"?"nav-active":""} onClick={()=>setTab("play")}><Smartphone size={17}/> Người chơi</button><button className={tab==="admin"?"nav-active":""} onClick={()=>setTab("admin")}><Settings size={17}/> Quản trị</button></nav><div className="online-pill"><span/> ĐỐ VUI ONLINE</div><div className="audio-controls"><button type="button" className="audio-toggle" onClick={toggleMusic} aria-pressed={musicEnabled} title={musicEnabled?"Tắt nhạc nền":"Bật nhạc nền"}>{musicEnabled?<Volume2 size={17}/>:<VolumeX size={17}/>} {musicEnabled?"Tắt nhạc":"Bật nhạc"}</button>{musicEnabled&&<label className="volume-control" title="Âm lượng nhạc"><input aria-label="Âm lượng nhạc nền" type="range" min="0" max="0.6" step="0.05" value={musicVolume} onChange={e=>setMusicVolume(Number(e.target.value))}/></label>}</div></header>
   {!configured&&<div className="config-warning"><strong>Chưa kết nối Supabase.</strong> Hãy tạo project Supabase, chạy file <code>supabase/schema.sql</code> và thêm biến môi trường vào Vercel. Bạn vẫn có thể xem giao diện demo.</div>}
   <div className="music-float" aria-label="Điều khiển nhạc nền">
    <button type="button" className="music-float-toggle" onClick={toggleMusic} aria-pressed={musicEnabled}>
@@ -354,7 +327,6 @@ export default function QuizLive() {
       <a href="https://tradetool-delta.vercel.app/" target="_blank" rel="noopener noreferrer">Công Cụ Tài Chính</a>
       <a href="https://raquyetdinh-sooty.vercel.app/" target="_blank" rel="noopener noreferrer">Ra Quyết Định Online</a>
       <a href="https://quayso-three.vercel.app/" target="_blank" rel="noopener noreferrer">Quay Số May Mắn</a>
-      <a href="/games">Tetris Pro Online</a>
     </nav>
     <span>TrungDzung 2026</span>
   </footer>

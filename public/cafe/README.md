@@ -11,6 +11,3 @@ Mở `index.html` bằng trình duyệt hiện đại hoặc deploy toàn bộ t
 
 ## Lưu ý
 Chat vẫn là mô phỏng cục bộ; để nhiều thiết bị nhìn thấy nhau theo thời gian thực cần kết nối backend/Realtime.
-
-
-Tên hiển thị: Café 247 Online. Hình nền mới: `assets/hall-cafe247.png`.

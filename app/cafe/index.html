@@ -166,7 +166,8 @@ for (const [k,src] of Object.entries(ASSETS)) { const im = new Image(); im.onloa
 /* ---- walk / sit-down sprite strips (8 frames: 0-3 walk from behind, 4-7 sitting down onto the cushion) ----
    seatH = height of the seated frame incl. cushion, used to match the static seated sprites (260px). */
 const ANIM = { man:{fw:212,fh:300,seatH:210}, woman:{fw:212,fh:300,seatH:220}, granny:{fw:195,fh:300,seatH:222} };
-const hasAnim = k => ['man','woman','granny'].includes(k); // Use sprite strips with walk + sit frames.
+const animFamily = k => k.startsWith('man') ? 'man' : (k.startsWith('woman') ? 'woman' : (k==='granny' ? 'granny' : null));
+const hasAnim = k => !!animFamily(k); // walk animation family; seated pose uses the matching café outfit sprite.
 
 /* ---- Floor layout: clean garden illustration has empty round tables; visitors are live sprites. ---- */
 const FLOOR = { yTop: 500, yBot: 1760, xHalfTop: 220, xHalfBot: 480 };
@@ -185,7 +186,10 @@ TABLES.forEach((tb,ti)=>{
   // Hai ghế mỗi bàn; tăng kích thước khách và tách vị trí trái/phải để tránh chồng ghế.
   const positions = ti===0 ? [[-126,100],[126,100]] : [[-98,82],[98,82]];
   positions.forEach(([dx,dy],si)=>seats.push({
-    x:tb.x+dx, y:tb.y+dy, scale:tb.scale, r:Math.round(depth*10),
+    // Anchor at the front edge of each chair so the character sits on the seat, not on the tabletop.
+    x:tb.x+dx, y:tb.y+dy-18, scale:tb.scale, r:Math.round(depth*10),
+    // Left chair looks toward the table centre from the left; right chair faces inward from the right.
+    facing: si===0 ? 1 : -1,
     c:si, table:ti, taken:null, order:ti*2+si
   }));
 });
@@ -218,13 +222,13 @@ const DOOR = { x: SW/2, y: SH + 80 };         // walk in from below the frame
 
 /* ---- visitors ---- */
 const visitors = [], fx = [], floaters = [];
-const SKINS = ['granny','man','woman','woman','man','granny','woman','man'];
+const SKINS = ['granny','man3','woman2','man2','woman3','man','woman','man3'];
 function freeSeat(){ return seats.find(s=>!s.taken) || null; }
 const MAX_GUESTS = 5; // Tối đa 5 khách/người chơi cùng lúc
 function addVisitor(name, skin, instant, isMe){
   if (visitors.length >= MAX_GUESTS) return null;
   const seat = freeSeat(); if(!seat) return null;
-  const v = { name, skin, seat, x: instant?seat.x:DOOR.x, y: instant?seat.y:DOOR.y, state: instant?'sit':'walk', t:0, frame: 7, ft:0, sitT:-1, flip:false, fade: instant?1:0, bob:0, bow:0, glow:0, coins:0, isMe:!!isMe, phase:Math.random()*6.28 };
+  const v = { name, skin, seat, x: instant?seat.x:DOOR.x, y: instant?seat.y:DOOR.y, state: instant?'sit':'walk', targetX:seat.x, targetY:seat.y, targetSeat:seat, t:0, frame:7, ft:0, sitT:-1, flip:seat.facing<0, fade:instant?1:0, bob:0, bow:0, glow:0, coins:0, isMe:!!isMe, phase:Math.random()*6.28 };
   seat.taken = v; visitors.push(v); updateCount(); return v;
 }
 function removeVisitor(v){ if(!v) return; v.seat.taken=null; visitors.splice(visitors.indexOf(v),1); updateCount(); }
@@ -333,9 +337,10 @@ const SUTRA = ['Cà phê ngon quá!','Cho mình thêm chút đá nhé.','Cuối 
 function donate(v, coins, kind, text){
   v.coins += coins; v.glow = 1; v.bow = 1;
   const big = coins >= 99;
-  fx.push({ kind, x:v.seat.x, y:v.seat.y-120*v.seat.scale, t:0, life: big?3.2:2.2, scale: v.seat.scale*(big?1.6:1.1) });
-  // petals drift up from the seat; big gifts also shower the Buddha
-  for (let i=0;i<(big?18:coins>=20?8:3);i++) floaters.push({ x:v.seat.x+(Math.random()-.5)*160*v.seat.scale, y:v.seat.y-60, vx:(Math.random()-.5)*30, vy:-(60+Math.random()*80), t:0, life:2.5+Math.random(), s:.18+Math.random()*.15 });
+  const anchor=v.seat||{x:v.x,y:v.y,scale:.32};
+  fx.push({ kind, x:anchor.x, y:anchor.y-120*anchor.scale, t:0, life: big?3.2:2.2, scale: anchor.scale*(big?1.6:1.1) });
+  // petals drift up from the character's current position; big gifts also shower the café.
+  for (let i=0;i<(big?18:coins>=20?8:3);i++) floaters.push({ x:anchor.x+(Math.random()-.5)*160*anchor.scale, y:anchor.y-60, vx:(Math.random()-.5)*30, vy:-(60+Math.random()*80), t:0, life:2.5+Math.random(), s:.18+Math.random()*.15 });
   if (big){ bell(true); for (let i=0;i<24;i++) floaters.push({ x:SW/2+(Math.random()-.5)*500, y:300+Math.random()*300, vx:(Math.random()-.5)*40, vy:20+Math.random()*40, t:0, life:4, s:.2+Math.random()*.15, down:true }); }
   const label = {petal:'Cà phê đen',incense:'Trà đào',lotus:'Bạc xỉu',bell:'Gọi món'}[kind];
   say(v.name, ` đã gọi ${label} ×${coins}` + (text?` · "${text}"`:''), true);
@@ -370,13 +375,35 @@ canvas.addEventListener('pointerdown', (ev)=>{
   let hit=null, best=Infinity;
   for(const v of visitors){
     if(v===me || v.state==='walk') continue;
-    const s=v.seat.scale;
+    const s=v.seat ? v.seat.scale : (.27+.18*Math.max(0,Math.min(1,(v.y-FLOOR.yTop)/(FLOOR.yBot-FLOOR.yTop))));
     const dx=px-v.x, dy=py-(v.y-115*s);
     const d=(dx*dx)/(95*95)+(dy*dy)/(130*130);
     if(d<1 && d<best){best=d;hit=v;}
   }
   if(hit){ev.preventDefault();openGroupChat(hit);return;}
-  if(!me||me.state!=='sit') return; const s=SUTRA[Math.floor(Math.random()*SUTRA.length)]; say(me.name,' '+s); me.bow=1; floaters.push({x:me.seat.x,y:me.seat.y-80,vx:0,vy:-70,t:0,life:2,s:.14});
+  if(!me) return;
+  // Tap/click an empty floor tile to walk there. Tap close to a free chair to sit down.
+  // Keep destinations inside the walkable courtyard, away from the tables and fountain.
+  const floorY=Math.max(570,Math.min(1690,py));
+  const maxHalf=220+(floorY-FLOOR.yTop)/(FLOOR.yBot-FLOOR.yTop)*260;
+  const floorX=Math.max(SW/2-maxHalf,Math.min(SW/2+maxHalf,px));
+  let targetSeat=null, seatDistance=Infinity;
+  for(const seat of seats){
+    if(seat.taken && seat.taken!==me) continue;
+    const d=Math.hypot(floorX-seat.x,(floorY-seat.y)*.85);
+    if(d<seatDistance){seatDistance=d;targetSeat=seat;}
+  }
+  if(targetSeat && seatDistance<75){
+    if(me.seat && me.seat!==targetSeat && me.seat.taken===me) me.seat.taken=null;
+    if(targetSeat.taken!==me) targetSeat.taken=me;
+    me.seat=targetSeat; me.targetSeat=targetSeat; me.targetX=targetSeat.x; me.targetY=targetSeat.y;
+    me.state='walk'; me.flip=me.targetX<me.x; showToast('Đang đi đến ghế…');
+  } else {
+    if(me.seat && me.seat.taken===me) me.seat.taken=null;
+    me.targetSeat=null; me.targetX=floorX; me.targetY=floorY; me.state='walk'; me.flip=me.targetX<me.x;
+    showToast('Đang di chuyển…');
+  }
+  ev.preventDefault();
 },{capture:true});
 // demo activity: random comments and small gifts from the crowd
 setInterval(()=>{ if (visitors.length<2) return; const v=visitors[Math.floor(Math.random()*visitors.length)]; if (v===me) return;
@@ -416,27 +443,31 @@ function tick(now){
   // Render every guest as an independent character sprite, sorted back-to-front.
   const order=[...visitors].sort((a,b)=>a.y-b.y);
   for (const v of order){
-    const anim = hasAnim(v.skin);
+    const family = animFamily(v.skin);
+    const anim = !!family;
     if (v.state==='walk'){
-      if (!anim){ v.x=v.seat.x; v.y=v.seat.y; v.state='sit'; }        // no strip for this skin yet: appear in place
-      else {
-        // walk up the aisle first, then step sideways into the row; speed in stage px/s scales with depth
-        const depth = (v.y-FLOOR.yTop)/(FLOOR.yBot-FLOOR.yTop), sp = (150+170*Math.max(0,Math.min(1.4,depth)))*dt;
-        const dx=v.seat.x-v.x, dy=v.seat.y-v.y;
-        if (Math.abs(dy)>3){ v.y += Math.max(-sp, Math.min(sp, dy)); v.x += (SW/2-v.x)*Math.min(1,dt*6); v.flip=false; }
-        else { v.x += Math.max(-sp, Math.min(sp, dx)); v.flip = dx<0; }
-        v.ft += dt; if (v.ft > .16){ v.ft = 0; v.frame = (v.frame+1)%4; }      // ~6 fps walk cycle
-        if (Math.abs(v.x-v.seat.x)<2 && Math.abs(v.y-v.seat.y)<3){ v.x=v.seat.x; v.y=v.seat.y; v.state='sitting'; v.sitT=0; v.flip=false; }
+      // Move smoothly to the tapped destination. Café sprites are static PNGs, so add a subtle bob while walking.
+      const dx=(v.targetX??v.x)-v.x, dy=(v.targetY??v.y)-v.y;
+      const dist=Math.hypot(dx,dy), speed=250;
+      if(dist>2){ const step=Math.min(dist,speed*dt); v.x+=dx/dist*step; v.y+=dy/dist*step; v.flip=dx<0;
+        // Cycle the first four sprite-sheet frames while moving so the character visibly walks.
+        v.ft=(v.ft||0)+dt; v.frame=Math.floor(v.ft/0.12)%4;
+      }
+      if(dist<=speed*dt+2){
+        v.x=v.targetX??v.x; v.y=v.targetY??v.y;
+        if(v.targetSeat){ v.seat=v.targetSeat; v.state='sitting'; v.sitT=0; v.frame=4; v.ft=0; v.flip=!!(v.seat.facing<0); }
+        else { v.seat=null; v.targetSeat=null; v.state='roam'; v.frame=0; v.ft=0; }
       }
     } else if (v.state==='sitting'){
       v.sitT += dt; v.frame = 4 + Math.min(3, Math.floor(v.sitT/.22));        // 4 frames ≈ 0.9 s to sit down
       if (v.sitT > .9){ v.state='sit'; v.frame=7; v.targetSeat=null; if (v.isMe) showToast('Bạn đã ngồi xuống, gọi cà phê nhé!'); }
     }
     v.fade = Math.min(1, v.fade + dt*2);
-    const sc = v.state==='walk' ? (.22+.33*((v.y-FLOOR.yTop)/(FLOOR.yBot-FLOOR.yTop))) : v.seat.scale;
+    const depthScale=.27+.18*Math.max(0,Math.min(1,(v.y-FLOOR.yTop)/(FLOOR.yBot-FLOOR.yTop)));
+    const sc = (v.state==='walk'||v.state==='roam') ? depthScale : (v.seat ? v.seat.scale : depthScale);
     const s = Math.max(.2, Math.min(.75, sc));
     v.bow = Math.max(0, v.bow - dt*.7); v.glow = Math.max(0, v.glow - dt*.5);
-    const breathe = (reduce||v.state!=='sit')?0:Math.sin(t*1.1+v.phase)*2*s;
+    const breathe = (reduce||v.state!=='sit')?((v.state==='walk'?Math.sin(t*12+v.phase)*3*s:0)):Math.sin(t*1.1+v.phase)*2*s;
     if (v.isMe){ v.glow=Math.max(v.glow,.12); }
     if (v.glow>0){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=v.glow*.7; const g=ctx.createRadialGradient(v.x,v.y-90*s,10,v.x,v.y-90*s,170*s); g.addColorStop(0,'rgba(255,200,110,.9)'); g.addColorStop(1,'rgba(255,160,60,0)'); ctx.fillStyle=g; ctx.fillRect(v.x-200*s,v.y-300*s,400*s,340*s); ctx.restore(); }
     // gentle bow on gift/chant: ease in-out, pivot at the cushion, max ~4% squash
@@ -444,11 +475,28 @@ function tick(now){
     ctx.save(); ctx.globalAlpha = v.fade; ctx.translate(v.x, v.y); if (bowK>0) ctx.transform(1,0,0,1-bowK,0,0);
     let tagH;
     if (anim){
-      const a = ANIM[v.skin], k = s*1.05*260/a.seatH;                         // same on-screen size as the static seated art
+      const a = ANIM[family];
+      const isSeated = v.state==='sit' || v.state==='sitting';
+      // Use full-color café outfit art while seated: these sprites already show the guest
+      // sitting on a chair and holding/sipping a drink, matching the supplied reference.
+      const seatedArt = A[v.skin] && A[v.skin].naturalWidth ? A[v.skin] : A[family];
       if (v.flip) ctx.scale(-1,1);
-      ctx.drawImage(A['anim_'+v.skin], v.frame*a.fw, 0, a.fw, a.fh, -a.fw*k/2, -a.fh*k + breathe, a.fw*k, a.fh*k);
-      tagH = (v.state==='sit' ? a.seatH : a.fh*.97) * k;
-    } else { drawSprite(A[v.skin]||A.man, 0, breathe, s*1.05, 1); tagH = 300*s; }
+      if (isSeated && seatedArt && seatedArt.naturalWidth){
+        const targetH = (v.seat ? v.seat.scale : s) * 1.05 * 300;
+        const k = targetH / seatedArt.naturalHeight;
+        ctx.drawImage(seatedArt, -seatedArt.naturalWidth*k/2, -seatedArt.naturalHeight*k + breathe, seatedArt.naturalWidth*k, seatedArt.naturalHeight*k);
+        tagH = seatedArt.naturalHeight*k;
+      } else {
+        // Walk cycle: 4 frames from the sprite strip. Never render the seated frame while moving.
+        const frame = (v.state==='walk' || v.state==='roam') ? (v.frame%4) : Math.max(4,Math.min(7,v.frame));
+        const k = s*1.05*260/a.seatH;
+        ctx.drawImage(A['anim_'+family], frame*a.fw, 0, a.fw, a.fh, -a.fw*k/2, -a.fh*k + breathe, a.fw*k, a.fh*k);
+        tagH = a.fh*k;
+      }
+    } else {
+      if (v.flip) ctx.scale(-1,1);
+      drawSprite(A[v.skin]||A.man, 0, breathe, s*1.05, 1); tagH = 300*s;
+    }
     ctx.restore();
     nameTag(v.name, v.x, v.y - tagH - 10*s, s, v.isMe);
   }

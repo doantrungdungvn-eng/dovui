@@ -166,7 +166,8 @@ for (const [k,src] of Object.entries(ASSETS)) { const im = new Image(); im.onloa
 /* ---- walk / sit-down sprite strips (8 frames: 0-3 walk from behind, 4-7 sitting down onto the cushion) ----
    seatH = height of the seated frame incl. cushion, used to match the static seated sprites (260px). */
 const ANIM = { man:{fw:212,fh:300,seatH:210}, woman:{fw:212,fh:300,seatH:220}, granny:{fw:195,fh:300,seatH:222} };
-const hasAnim = k => ['man','woman','granny'].includes(k); // Use sprite strips with walk + sit frames.
+const animFamily = k => k.startsWith('man') ? 'man' : (k.startsWith('woman') ? 'woman' : (k==='granny' ? 'granny' : null));
+const hasAnim = k => !!animFamily(k); // walk animation family; seated pose uses the matching café outfit sprite.
 
 /* ---- Floor layout: clean garden illustration has empty round tables; visitors are live sprites. ---- */
 const FLOOR = { yTop: 500, yBot: 1760, xHalfTop: 220, xHalfBot: 480 };
@@ -221,7 +222,7 @@ const DOOR = { x: SW/2, y: SH + 80 };         // walk in from below the frame
 
 /* ---- visitors ---- */
 const visitors = [], fx = [], floaters = [];
-const SKINS = ['granny','man','woman','woman','man','granny','woman','man'];
+const SKINS = ['granny','man3','woman2','man2','woman3','man','woman','man3'];
 function freeSeat(){ return seats.find(s=>!s.taken) || null; }
 const MAX_GUESTS = 5; // Tối đa 5 khách/người chơi cùng lúc
 function addVisitor(name, skin, instant, isMe){
@@ -442,7 +443,8 @@ function tick(now){
   // Render every guest as an independent character sprite, sorted back-to-front.
   const order=[...visitors].sort((a,b)=>a.y-b.y);
   for (const v of order){
-    const anim = hasAnim(v.skin);
+    const family = animFamily(v.skin);
+    const anim = !!family;
     if (v.state==='walk'){
       // Move smoothly to the tapped destination. Café sprites are static PNGs, so add a subtle bob while walking.
       const dx=(v.targetX??v.x)-v.x, dy=(v.targetY??v.y)-v.y;
@@ -473,11 +475,28 @@ function tick(now){
     ctx.save(); ctx.globalAlpha = v.fade; ctx.translate(v.x, v.y); if (bowK>0) ctx.transform(1,0,0,1-bowK,0,0);
     let tagH;
     if (anim){
-      const a = ANIM[v.skin], k = s*1.05*260/a.seatH;                         // same on-screen size as the static seated art
+      const a = ANIM[family];
+      const isSeated = v.state==='sit' || v.state==='sitting';
+      // Use full-color café outfit art while seated: these sprites already show the guest
+      // sitting on a chair and holding/sipping a drink, matching the supplied reference.
+      const seatedArt = A[v.skin] && A[v.skin].naturalWidth ? A[v.skin] : A[family];
       if (v.flip) ctx.scale(-1,1);
-      ctx.drawImage(A['anim_'+v.skin], v.frame*a.fw, 0, a.fw, a.fh, -a.fw*k/2, -a.fh*k + breathe, a.fw*k, a.fh*k);
-      tagH = (v.state==='sit' ? a.seatH : a.fh*.97) * k;
-    } else { if (v.seat && v.seat.facing<0) ctx.scale(-1,1); drawSprite(A[v.skin]||A.man, 0, breathe, s*1.05, 1); tagH = 300*s; }
+      if (isSeated && seatedArt && seatedArt.naturalWidth){
+        const targetH = (v.seat ? v.seat.scale : s) * 1.05 * 300;
+        const k = targetH / seatedArt.naturalHeight;
+        ctx.drawImage(seatedArt, -seatedArt.naturalWidth*k/2, -seatedArt.naturalHeight*k + breathe, seatedArt.naturalWidth*k, seatedArt.naturalHeight*k);
+        tagH = seatedArt.naturalHeight*k;
+      } else {
+        // Walk cycle: 4 frames from the sprite strip. Never render the seated frame while moving.
+        const frame = (v.state==='walk' || v.state==='roam') ? (v.frame%4) : Math.max(4,Math.min(7,v.frame));
+        const k = s*1.05*260/a.seatH;
+        ctx.drawImage(A['anim_'+family], frame*a.fw, 0, a.fw, a.fh, -a.fw*k/2, -a.fh*k + breathe, a.fw*k, a.fh*k);
+        tagH = a.fh*k;
+      }
+    } else {
+      if (v.flip) ctx.scale(-1,1);
+      drawSprite(A[v.skin]||A.man, 0, breathe, s*1.05, 1); tagH = 300*s;
+    }
     ctx.restore();
     nameTag(v.name, v.x, v.y - tagH - 10*s, s, v.isMe);
   }

@@ -155,6 +155,7 @@ const canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
 const A = {};   // loaded images
 const ASSETS = {
   hall:'assets/hall-cafe247.png',
+  anim_man:'assets/anim_man.png', anim_woman:'assets/anim_woman.png', anim_granny:'assets/anim_granny.png',
   granny:'assets/c_granny.png', man:'assets/c_man.png', woman:'assets/c_woman.png', child:'assets/c_child.png',
   man2:'assets/c_man2.png', woman2:'assets/c_woman2.png', man3:'assets/c_man3.png', woman3:'assets/c_woman3.png',
   lotus:'assets/fx_lotus.png', halo:'assets/fx_halo.png', bell:'assets/fx_bell.png', incense:'assets/fx_incense.png', petal:'assets/fx_petal.png', mo:'assets/fx_mo.png', banner:'assets/fx_banner.png', scroll:'assets/fx_scroll.png',
@@ -165,7 +166,7 @@ for (const [k,src] of Object.entries(ASSETS)) { const im = new Image(); im.onloa
 /* ---- walk / sit-down sprite strips (8 frames: 0-3 walk from behind, 4-7 sitting down onto the cushion) ----
    seatH = height of the seated frame incl. cushion, used to match the static seated sprites (260px). */
 const ANIM = { man:{fw:212,fh:300,seatH:210}, woman:{fw:212,fh:300,seatH:220}, granny:{fw:195,fh:300,seatH:222} };
-const hasAnim = k => false; // Use café sprites: guests hold coffee instead of praying.
+const hasAnim = k => ['man','woman','granny'].includes(k); // Use sprite strips with walk + sit frames.
 
 /* ---- Floor layout: clean garden illustration has empty round tables; visitors are live sprites. ---- */
 const FLOOR = { yTop: 500, yBot: 1760, xHalfTop: 220, xHalfBot: 480 };
@@ -429,7 +430,7 @@ function tick(now){
       }
     } else if (v.state==='sitting'){
       v.sitT += dt; v.frame = 4 + Math.min(3, Math.floor(v.sitT/.22));        // 4 frames ≈ 0.9 s to sit down
-      if (v.sitT > .9){ v.state='sit'; v.frame=7; if (v.isMe) showToast('Bạn đã ngồi xuống, gọi cà phê nhé!'); }
+      if (v.sitT > .9){ v.state='sit'; v.frame=7; v.targetSeat=null; if (v.isMe) showToast('Bạn đã ngồi xuống, gọi cà phê nhé!'); }
     }
     v.fade = Math.min(1, v.fade + dt*2);
     const sc = v.state==='walk' ? (.22+.33*((v.y-FLOOR.yTop)/(FLOOR.yBot-FLOOR.yTop))) : v.seat.scale;

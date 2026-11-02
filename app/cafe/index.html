@@ -222,7 +222,8 @@ const DOOR = { x: SW/2, y: SH + 80 };         // walk in from below the frame
 
 /* ---- visitors ---- */
 const visitors = [], fx = [], floaters = [];
-const SKINS = ['granny','man3','woman2','man2','woman3','man','woman','man3'];
+// Outfit roster: distinct café looks for older guest, casual men, and women.
+const SKINS = ['granny','man3','woman2','man2','woman3','man','woman','child'];
 function freeSeat(){ return seats.find(s=>!s.taken) || null; }
 const MAX_GUESTS = 5; // Tối đa 5 khách/người chơi cùng lúc
 function addVisitor(name, skin, instant, isMe){
@@ -456,7 +457,7 @@ function tick(now){
       if(dist<=speed*dt+2){
         v.x=v.targetX??v.x; v.y=v.targetY??v.y;
         if(v.targetSeat){ v.seat=v.targetSeat; v.state='sitting'; v.sitT=0; v.frame=4; v.ft=0; v.flip=!!(v.seat.facing<0); }
-        else { v.seat=null; v.targetSeat=null; v.state='roam'; v.frame=0; v.ft=0; }
+        else { v.seat=null; v.targetSeat=null; v.state='stand'; v.frame=0; v.ft=0; }
       }
     } else if (v.state==='sitting'){
       v.sitT += dt; v.frame = 4 + Math.min(3, Math.floor(v.sitT/.22));        // 4 frames ≈ 0.9 s to sit down
@@ -464,10 +465,10 @@ function tick(now){
     }
     v.fade = Math.min(1, v.fade + dt*2);
     const depthScale=.27+.18*Math.max(0,Math.min(1,(v.y-FLOOR.yTop)/(FLOOR.yBot-FLOOR.yTop)));
-    const sc = (v.state==='walk'||v.state==='roam') ? depthScale : (v.seat ? v.seat.scale : depthScale);
+    const sc = (v.state==='walk'||v.state==='stand'||v.state==='roam') ? depthScale : (v.seat ? v.seat.scale : depthScale);
     const s = Math.max(.2, Math.min(.75, sc));
     v.bow = Math.max(0, v.bow - dt*.7); v.glow = Math.max(0, v.glow - dt*.5);
-    const breathe = (reduce||v.state!=='sit')?((v.state==='walk'?Math.sin(t*12+v.phase)*3*s:0)):Math.sin(t*1.1+v.phase)*2*s;
+    const breathe = (reduce||v.state!=='sit')?((v.state==='walk'?Math.sin(t*12+v.phase)*3*s:(v.state==='stand'?Math.sin(t*2+v.phase)*1.5*s:0))):Math.sin(t*1.1+v.phase)*2*s;
     if (v.isMe){ v.glow=Math.max(v.glow,.12); }
     if (v.glow>0){ ctx.save(); ctx.globalCompositeOperation='lighter'; ctx.globalAlpha=v.glow*.7; const g=ctx.createRadialGradient(v.x,v.y-90*s,10,v.x,v.y-90*s,170*s); g.addColorStop(0,'rgba(255,200,110,.9)'); g.addColorStop(1,'rgba(255,160,60,0)'); ctx.fillStyle=g; ctx.fillRect(v.x-200*s,v.y-300*s,400*s,340*s); ctx.restore(); }
     // gentle bow on gift/chant: ease in-out, pivot at the cushion, max ~4% squash
@@ -488,7 +489,7 @@ function tick(now){
         tagH = seatedArt.naturalHeight*k;
       } else {
         // Walk cycle: 4 frames from the sprite strip. Never render the seated frame while moving.
-        const frame = (v.state==='walk' || v.state==='roam') ? (v.frame%4) : Math.max(4,Math.min(7,v.frame));
+        const frame = v.state==='walk' ? (v.frame%4) : (v.state==='stand' ? 0 : Math.max(4,Math.min(7,v.frame)));
         const k = s*1.05*260/a.seatH;
         ctx.drawImage(A['anim_'+family], frame*a.fw, 0, a.fw, a.fh, -a.fw*k/2, -a.fh*k + breathe, a.fw*k, a.fh*k);
         tagH = a.fh*k;
